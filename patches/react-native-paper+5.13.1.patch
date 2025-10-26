@@ -1,0 +1,22 @@
+diff --git a/node_modules/react-native-paper/src/styles/themes/v3/LightTheme.tsx b/node_modules/react-native-paper/src/styles/themes/v3/LightTheme.tsx
+index 99e0d11..02d51c6 100644
+--- a/node_modules/react-native-paper/src/styles/themes/v3/LightTheme.tsx
++++ b/node_modules/react-native-paper/src/styles/themes/v3/LightTheme.tsx
+@@ -7,7 +7,7 @@ import configureFonts from '../../fonts';
+ const { palette, opacity } = tokens.md.ref;
+ 
+ export const MD3LightTheme: MD3Theme = {
+-  dark: false,
++  dark: true,
+   roundness: 4,
+   version: 3,
+   isV3: true,
+@@ -15,7 +15,7 @@ export const MD3LightTheme: MD3Theme = {
+     primary: palette.primary40,
+     primaryContainer: palette.primary90,
+     secondary: palette.secondary40,
+-    secondaryContainer: palette.secondary90,
++    secondaryContainer: 'rgba(255, 255, 255, 0)',
+     tertiary: palette.tertiary40,
+     tertiaryContainer: palette.tertiary90,
+     surface: palette.neutral99,

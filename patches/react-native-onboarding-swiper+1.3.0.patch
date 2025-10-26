@@ -1,0 +1,92 @@
+diff --git a/node_modules/react-native-onboarding-swiper/src/Pagination.js b/node_modules/react-native-onboarding-swiper/src/Pagination.js
+index dad6dd7..6c80c85 100755
+--- a/node_modules/react-native-onboarding-swiper/src/Pagination.js
++++ b/node_modules/react-native-onboarding-swiper/src/Pagination.js
+@@ -72,7 +72,7 @@ const Pagination = ({
+ 
+   return (
+     <View style={{width:'100%',alignSelf:'center',paddingHorizontal:10}}>
+-      <View style={{alignItems:'center',marginVertical:20}}>
++      <View style={{alignItems:'center',marginVertical:10}}>
+       <Dots
+         isLight={isLight}
+         numPages={numPages}
+diff --git a/node_modules/react-native-onboarding-swiper/src/index.js b/node_modules/react-native-onboarding-swiper/src/index.js
+index f3b340d..773ebd4 100755
+--- a/node_modules/react-native-onboarding-swiper/src/index.js
++++ b/node_modules/react-native-onboarding-swiper/src/index.js
+@@ -225,11 +225,11 @@ componentDidMount(){
+         {/* {showPagination && ( */}
+           <View style={[bottomBarHighlight ? styles.overlay : {},
+           styles.customContainerStyle]}>
+-            <View>
+-            <Text style={styles.customTitleStyle}>
++            <View style={{paddingVertical:20}}>
++           {this.state.titleElement && <Text style={styles.customTitleStyle}>
+               {this.state.titleElement}
+-            </Text>
+-            <Text style={styles.customSubtitleStyle}>
++            </Text>}
++            <Text style={styles.customSubtitleStyle} numberOfLines={6}>
+              {this.state.subtitleElement}
+             </Text>
+             </View>
+@@ -343,46 +343,31 @@ const styles =StyleSheet.create( {
+     backgroundColor: 'red',
+   },
+   customContainerStyle:{
+-    // borderWidth:2,
+-    // borderColor:'blue',
+-    // position:'absolute',
+-    // bottom:0,
+     width:'100%',
+     alignSelf:'center',
+-    marginBottom:0,
+-    // height:'33%',
+     justifyContent:'space-between',
+     alignItems:'center',
+     paddingHorizontal:20,
+-    paddingVertical:20,
+-    paddingBottom:30,
++    paddingBottom:40,
+     backgroundColor:'#000000',
+-    // borderRadius:20,
+-    shadowColor:
+-    Platform.OS == 'android' ? '#D3D3D3' : 'black',
+-    shadowOffset: {
+-    width:3,
+-    height: 2,
+-     },
+-    shadowOpacity: 3,
+-    shadowRadius: 18,
+-    elevation: 20,
++    height:"38%"
+     }
+     ,
+     customTitleStyle:{
+     // textAlign:'center',
+-    fontSize:16,
++    fontSize:18,
+     color:'#ffffff',
+-    marginBottom:5,
+-    fontFamily:'Manrope-Bold'
++    marginBottom:10,
++    fontFamily:'SF-Pro-Display-Medium',
++    letterSpacing: 0.7
++    
+     },
+     customSubtitleStyle:{
+-    textAlign:'center',
+-    fontSize:12,
+-    color:'#757575',
+-    fontFamily:'Manrope-Regular'
+-
+-    
++    fontSize:16,
++    color:'#ffffff',
++    // marginBottom:5,
++    fontFamily:'SF-Pro-Display-Regular',
++    letterSpacing: 0.7
+     }
+ })
+ 

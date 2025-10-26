@@ -1,0 +1,15 @@
+diff --git a/node_modules/react-native-video-player/index.js b/node_modules/react-native-video-player/index.js
+index ed9965b..4ef1d28 100644
+--- a/node_modules/react-native-video-player/index.js
++++ b/node_modules/react-native-video-player/index.js
+@@ -572,8 +572,8 @@ export default class VideoPlayer extends Component {
+             }}
+           />
+         </View>
+-        {((!this.state.isPlaying) || this.state.isControlsVisible)
+-          ? this.renderControls() : this.renderSeekBar(true)}
++        {/* {((!this.state.isPlaying) || this.state.isControlsVisible)
++          ? this.renderControls() : this.renderSeekBar(true)} */}
+       </View>
+     );
+   }

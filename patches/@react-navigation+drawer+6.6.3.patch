@@ -1,0 +1,22 @@
+diff --git a/node_modules/@react-navigation/drawer/src/views/DrawerItem.tsx b/node_modules/@react-navigation/drawer/src/views/DrawerItem.tsx
+index a1f36f1..33e64b7 100644
+--- a/node_modules/@react-navigation/drawer/src/views/DrawerItem.tsx
++++ b/node_modules/@react-navigation/drawer/src/views/DrawerItem.tsx
+@@ -204,7 +204,7 @@ export default function DrawerItem(props: Props) {
+           <View
+             style={[
+               styles.label,
+-              { marginLeft: iconNode ? 32 : 0, marginVertical: 5 },
++              { marginLeft: iconNode ? 10 : 0, marginVertical: 5 },
+             ]}
+           >
+             {typeof label === 'string' ? (
+@@ -214,7 +214,7 @@ export default function DrawerItem(props: Props) {
+                 style={[
+                   {
+                     color,
+-                    fontWeight: '500',
++                    fontWeight: '400',
+                   },
+                   labelStyle,
+                 ]}

@@ -1,0 +1,237 @@
+diff --git a/node_modules/react-native-onboarding-swiper/src/Page.js b/node_modules/react-native-onboarding-swiper/src/Page.js
+index 16517c7..7b9b290 100644
+--- a/node_modules/react-native-onboarding-swiper/src/Page.js
++++ b/node_modules/react-native-onboarding-swiper/src/Page.js
+@@ -40,8 +40,8 @@ const Page = ({
+   return (
+     <View style={[styles.container, containerStyles, { width, height }]}>
+       <View style={[styles.imageContainer, imageContainerStyles]}>{image}</View>
+-      {titleElement}
+-      {subtitleElement}
++      {/* {titleElement}
++      {subtitleElement} */}
+     </View>
+   );
+ };
+@@ -86,11 +86,11 @@ const styles = {
+     flexDirection: 'column',
+     alignItems: 'center',
+     justifyContent: potrait ? 'center' : 'flex-start',
+-    paddingTop: potrait ? 0 : 10,
++    paddingTop:potrait ? 0 : 0,
+   },
+   imageContainer: {
+     flex: 0,
+-    paddingBottom: potrait ? 60 : 10,
++    paddingBottom: potrait ? 250 : 10,
+     alignItems: 'center',
+     width: '100%',
+   },
+diff --git a/node_modules/react-native-onboarding-swiper/src/Pagination.js b/node_modules/react-native-onboarding-swiper/src/Pagination.js
+index 0e44fd8..dad6dd7 100755
+--- a/node_modules/react-native-onboarding-swiper/src/Pagination.js
++++ b/node_modules/react-native-onboarding-swiper/src/Pagination.js
+@@ -71,26 +71,33 @@ const Pagination = ({
+   );
+ 
+   return (
++    <View style={{width:'100%',alignSelf:'center',paddingHorizontal:10}}>
++      <View style={{alignItems:'center',marginVertical:20}}>
++      <Dots
++        isLight={isLight}
++        numPages={numPages}
++        currentPage={currentPage}
++        Dot={DotComponent}
++        style={styles.dots}
++      />
++      </View>
+     <View
+       style={{
+         height: bottomBarHeight,
+         backgroundColor: bottomBarColor,
++        // borderWidth:1,
+         ...styles.container,
+       }}
+     >
+       <View style={styles.buttonLeft}>{SkipButtonFinal}</View>
+-      <Dots
+-        isLight={isLight}
+-        numPages={numPages}
+-        currentPage={currentPage}
+-        Dot={DotComponent}
+-        style={styles.dots}
+-      />
++    
++      
+       <View style={styles.buttonRight}>
+         {NextButtonFinal}
+         {DoneButtonFinal}
+       </View>
+     </View>
++    </View>
+   );
+ };
+ 
+diff --git a/node_modules/react-native-onboarding-swiper/src/index.js b/node_modules/react-native-onboarding-swiper/src/index.js
+index ad23272..f3b340d 100755
+--- a/node_modules/react-native-onboarding-swiper/src/index.js
++++ b/node_modules/react-native-onboarding-swiper/src/index.js
+@@ -6,6 +6,9 @@ import {
+   StatusBar,
+   SafeAreaView,
+   View,
++  Text,
++  StyleSheet,
++  Platform,
+ } from 'react-native';
+ 
+ import PropTypes from 'prop-types';
+@@ -18,7 +21,7 @@ import Dot from './Dot';
+ import SkipButton from './buttons/SkipButton';
+ import NextButton from './buttons/NextButton';
+ import DoneButton from './buttons/DoneButton';
+-
++import LinearGradient from 'react-native-linear-gradient';
+ // hotfix: https://github.com/facebook/react-native/issues/16710
+ const itemVisibleHotfix = { itemVisiblePercentThreshold: 100 };
+ 
+@@ -32,9 +35,22 @@ class Onboarding extends Component {
+       width: null,
+       height: null,
+       backgroundColorAnim: new Animated.Value(0),
++      titleElement:'',
++      subtitleElement:''
+     };
+   }
+ 
++
++componentDidMount(){
++  const {pages}= this.props
++  // console.log('proappapapapap',pages)
++  this.setState(
++    {
++     titleElement: pages[0]?.title,
++     subtitleElement:pages[0]?.subtitle
++   })
++}
++
+   componentDidUpdate() {
+     Animated.timing(this.state.backgroundColorAnim, {
+       toValue: 1,
+@@ -54,8 +70,11 @@ class Onboarding extends Component {
+         previousPage: state.currentPage,
+         currentPage: viewableItems[0].index,
+         backgroundColorAnim: new Animated.Value(0),
++        titleElement:viewableItems[0]?.item?.title,
++        subtitleElement:viewableItems[0]?.item?.subtitle
+       };
+     });
++
+   };
+ 
+   goNext = () => {
+@@ -74,7 +93,6 @@ class Onboarding extends Component {
+       animated,
+     });
+   };
+-
+   _onLayout = () => {
+     const { width, height } = Dimensions.get('window');
+     this.setState({ width, height });
+@@ -182,7 +200,8 @@ class Onboarding extends Component {
+     return (
+       <Animated.View
+         onLayout={this._onLayout}
+-        style={{ flex: 1, backgroundColor, justifyContent: 'center' }}
++        style={{ flex: 1, backgroundColor, justifyContent: 'center' ,}}
++        
+       >
+         {controlStatusBar && <StatusBar barStyle={barStyle} />}
+         <FlatList
+@@ -203,8 +222,17 @@ class Onboarding extends Component {
+           }
+           {...flatlistProps}
+         />
+-        {showPagination && (
+-          <SafeAreaView style={bottomBarHighlight ? styles.overlay : {}}>
++        {/* {showPagination && ( */}
++          <View style={[bottomBarHighlight ? styles.overlay : {},
++          styles.customContainerStyle]}>
++            <View>
++            <Text style={styles.customTitleStyle}>
++              {this.state.titleElement}
++            </Text>
++            <Text style={styles.customSubtitleStyle}>
++             {this.state.subtitleElement}
++            </Text>
++            </View>
+             <Pagination
+               isLight={isLight}
+               bottomBarHeight={bottomBarHeight}
+@@ -226,8 +254,8 @@ class Onboarding extends Component {
+               NextButtonComponent={NextButtonComponent}
+               DotComponent={DotComponent}
+             />
+-          </SafeAreaView>
+-        )}
++          </View>
++        {/* )} */}
+       </Animated.View>
+     );
+   }
+@@ -310,10 +338,52 @@ Onboarding.defaultProps = {
+   pageIndexCallback: null,
+ };
+ 
+-const styles = {
++const styles =StyleSheet.create( {
+   overlay: {
+-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
++    backgroundColor: 'red',
+   },
+-};
++  customContainerStyle:{
++    // borderWidth:2,
++    // borderColor:'blue',
++    // position:'absolute',
++    // bottom:0,
++    width:'100%',
++    alignSelf:'center',
++    marginBottom:0,
++    // height:'33%',
++    justifyContent:'space-between',
++    alignItems:'center',
++    paddingHorizontal:20,
++    paddingVertical:20,
++    paddingBottom:30,
++    backgroundColor:'#000000',
++    // borderRadius:20,
++    shadowColor:
++    Platform.OS == 'android' ? '#D3D3D3' : 'black',
++    shadowOffset: {
++    width:3,
++    height: 2,
++     },
++    shadowOpacity: 3,
++    shadowRadius: 18,
++    elevation: 20,
++    }
++    ,
++    customTitleStyle:{
++    // textAlign:'center',
++    fontSize:16,
++    color:'#ffffff',
++    marginBottom:5,
++    fontFamily:'Manrope-Bold'
++    },
++    customSubtitleStyle:{
++    textAlign:'center',
++    fontSize:12,
++    color:'#757575',
++    fontFamily:'Manrope-Regular'
++
++    
++    }
++})
+ 
+ export default Onboarding;
