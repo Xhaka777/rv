@@ -2134,8 +2134,6 @@ PODS:
     - React-utils (= 0.78.0)
   - RNAppleAuthentication (2.4.1):
     - React-Core
-  - RNAppleHealthKit (1.7.0):
-    - React
   - RNAudioRecorderPlayer (3.6.14):
     - React-Core
   - RNCAsyncStorage (1.24.0):
@@ -2235,15 +2233,53 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNImageCropPicker (0.40.3):
+  - RNImageCropPicker (0.51.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
     - React-RCTImage
-    - RNImageCropPicker/QBImagePickerController (= 0.40.3)
-    - TOCropViewController
-  - RNImageCropPicker/QBImagePickerController (0.40.3):
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RNImageCropPicker/QBImagePickerController (= 0.51.1)
+    - TOCropViewController (~> 2.8.0)
+    - Yoga
+  - RNImageCropPicker/QBImagePickerController (0.51.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
     - React-RCTImage
-    - TOCropViewController
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - TOCropViewController (~> 2.8.0)
+    - Yoga
   - RNLiveAudioStream (1.1.1):
     - React
   - RNLocalize (3.5.1):
@@ -2572,7 +2608,7 @@ PODS:
   - SocketRocket (0.7.1)
   - TextToSpeech (4.1.1):
     - React-Core
-  - TOCropViewController (2.7.4)
+  - TOCropViewController (2.8.0)
   - VisionCamera (2.16.8):
     - React
     - React-callinvoker
@@ -2678,7 +2714,6 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNAppleAuthentication (from `../node_modules/@invertase/react-native-apple-authentication`)"
-  - RNAppleHealthKit (from `../node_modules/react-native-health`)
   - RNAudioRecorderPlayer (from `../node_modules/react-native-audio-recorder-player`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCClipboard (from `../node_modules/@react-native-community/clipboard`)"
@@ -2919,8 +2954,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   RNAppleAuthentication:
     :path: "../node_modules/@invertase/react-native-apple-authentication"
-  RNAppleHealthKit:
-    :path: "../node_modules/react-native-health"
   RNAudioRecorderPlayer:
     :path: "../node_modules/react-native-audio-recorder-player"
   RNCAsyncStorage:
@@ -3081,7 +3114,6 @@ SPEC CHECKSUMS:
   ReactCodegen: 008c319179d681a6a00966edfc67fda68f9fbb2e
   ReactCommon: 0c097b53f03d6bf166edbcd0915da32f3015dd90
   RNAppleAuthentication: c3dddf5918126c9aae85dc2e2ce9fb87835e9e04
-  RNAppleHealthKit: 86ef7ab70f762b802f5c5289372de360cca701f9
   RNAudioRecorderPlayer: b5ed41ccfe72a211a870bfe09ab36c046eb27d2a
   RNCAsyncStorage: dc5ca6aeca46e73f963ea4f79e222838c2d186cb
   RNCClipboard: b0541df1bb88935d40bdc93b41b7d8e3334c998a
@@ -3092,7 +3124,7 @@ SPEC CHECKSUMS:
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   RNGestureHandler: 3ab8e53e9d405a340ea6612d5c2ef42e6e8477e3
   RNGoogleSignin: 857a975c3cc5cefd1a9b13c2213ed879b3b5fd36
-  RNImageCropPicker: 2c53b596a1af85eacba1048e996f916933021bbb
+  RNImageCropPicker: 1eefdb201d03ba6373b38dbb73bff452bd03a1d3
   RNLiveAudioStream: 93ac2bb6065be9018d0b00157b220f11cebc1513
   RNLocalize: 608140781859d7e00e1741248b0249eceb456a25
   RNNotifee: 271cfeb505183d2cd1b858c14c3968b6ca30a642
@@ -3107,7 +3139,7 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   TextToSpeech: 89b239221ec378d213af422d14789a729705360b
-  TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
+  TOCropViewController: 797deaf39c90e6e9ddd848d88817f6b9a8a09888
   VisionCamera: abaceca3dea664650095551ac72c98d1db231730
   Yoga: afd04ff05ebe0121a00c468a8a3c8080221cb14c
 

@@ -7,7 +7,7 @@ import {
   FAQ,
   FootageDetails,
   Footages,
-  HeartRateMonitor,
+  // HeartRateMonitor,
   LiveStream,
   TermsAndPolicy,
   Videos,
@@ -87,11 +87,11 @@ export const HomeStack: HomeScreenStacksTypes = [
       ...TransitionPresets.ModalTransition,
     },
   },
-  {
-    name: RouteNames.HomeRoutes.HeartRateMonitor,
-    component: HeartRateMonitor,
-    key: RouteNames.HomeRoutes.HeartRateMonitor,
-  },
+  // {
+  //   name: RouteNames.HomeRoutes.HeartRateMonitor,
+  //   component: HeartRateMonitor,
+  //   key: RouteNames.HomeRoutes.HeartRateMonitor,
+  // },
   // {
   //   name: RouteNames.HomeRoutes.PasscodeSettings,
   //   component: PasscodeSettings,

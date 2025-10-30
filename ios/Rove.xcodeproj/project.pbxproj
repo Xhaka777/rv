@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		073A9C1FE37E4825A27BC606 /* SF-Pro-Display-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 40E10D39BE5B47AF92CE20CE /* SF-Pro-Display-Semibold.ttf */; };
+		086ED0CEC6F4D591DDD5D180 /* libPods-Rove.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1A48D2F664B8630DC954BEFE /* libPods-Rove.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		1C09E37D2EAE583E00988F62 /* APNsTokenEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C09E37C2EAE583E00988F62 /* APNsTokenEmitter.swift */; };
 		1C09E37F2EAE58AB00988F62 /* APNsTokenEmitter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C09E37E2EAE58AB00988F62 /* APNsTokenEmitter.m */; };
@@ -30,7 +31,6 @@
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		8C3614DBB77644CFAFB360B7 /* SF-Pro-Display-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 33B378B819F14A1A9F108379 /* SF-Pro-Display-Regular.ttf */; };
-		8D2DCB5878B24BDA7F29D72E /* libPods-Rove.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6AFE31ECC925F59BB1000698 /* libPods-Rove.a */; };
 		B5728AB814214E65A441E7F8 /* SF-Pro-Display-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CCE245014E40473292A8B015 /* SF-Pro-Display-Medium.ttf */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +39,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Rove/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Rove/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = Rove/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1A48D2F664B8630DC954BEFE /* libPods-Rove.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Rove.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C09E37C2EAE583E00988F62 /* APNsTokenEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APNsTokenEmitter.swift; sourceTree = "<group>"; };
 		1C09E37E2EAE58AB00988F62 /* APNsTokenEmitter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = APNsTokenEmitter.m; sourceTree = "<group>"; };
 		1C2A82C22E2AAE9100D2F91E /* splash.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = splash.json; sourceTree = "<group>"; };
@@ -56,16 +57,15 @@
 		1CF3F6802EAA8954007B83E8 /* RoveIntents.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = RoveIntents.intentdefinition; sourceTree = "<group>"; };
 		1CF3F6822EAABFE4007B83E8 /* ArmRoveIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmRoveIntent.swift; sourceTree = "<group>"; };
 		1CF3F6842EAC0698007B83E8 /* rove_premium.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = rove_premium.png; sourceTree = "<group>"; };
-		2383F6761172444941EBB928 /* Pods-Rove.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rove.release.xcconfig"; path = "Target Support Files/Pods-Rove/Pods-Rove.release.xcconfig"; sourceTree = "<group>"; };
 		33B378B819F14A1A9F108379 /* SF-Pro-Display-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SF-Pro-Display-Regular.ttf"; path = "../src/assets/fonts/SF-Pro-Display-Regular.ttf"; sourceTree = "<group>"; };
 		3EA05C242DCEB17100095393 /* Rove.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = Rove.entitlements; path = Rove/Rove.entitlements; sourceTree = "<group>"; };
 		40E10D39BE5B47AF92CE20CE /* SF-Pro-Display-Semibold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SF-Pro-Display-Semibold.ttf"; path = "../src/assets/fonts/SF-Pro-Display-Semibold.ttf"; sourceTree = "<group>"; };
+		53AB5785B1421BF41353456C /* Pods-Rove.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rove.debug.xcconfig"; path = "Target Support Files/Pods-Rove/Pods-Rove.debug.xcconfig"; sourceTree = "<group>"; };
 		6293BE8808DE4324B2A2D677 /* SF-Pro-Display-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SF-Pro-Display-Bold.ttf"; path = "../src/assets/fonts/SF-Pro-Display-Bold.ttf"; sourceTree = "<group>"; };
-		6AFE31ECC925F59BB1000698 /* libPods-Rove.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Rove.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Rove/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = Rove/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		899703A00809CDA79CA41815 /* Pods-Rove.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rove.release.xcconfig"; path = "Target Support Files/Pods-Rove/Pods-Rove.release.xcconfig"; sourceTree = "<group>"; };
 		CCE245014E40473292A8B015 /* SF-Pro-Display-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SF-Pro-Display-Medium.ttf"; path = "../src/assets/fonts/SF-Pro-Display-Medium.ttf"; sourceTree = "<group>"; };
-		D9E00668F0A3350F27D21442 /* Pods-Rove.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Rove.debug.xcconfig"; path = "Target Support Files/Pods-Rove/Pods-Rove.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -74,7 +74,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8D2DCB5878B24BDA7F29D72E /* libPods-Rove.a in Frameworks */,
+				086ED0CEC6F4D591DDD5D180 /* libPods-Rove.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,7 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				6AFE31ECC925F59BB1000698 /* libPods-Rove.a */,
+				1A48D2F664B8630DC954BEFE /* libPods-Rove.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -164,8 +164,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				D9E00668F0A3350F27D21442 /* Pods-Rove.debug.xcconfig */,
-				2383F6761172444941EBB928 /* Pods-Rove.release.xcconfig */,
+				53AB5785B1421BF41353456C /* Pods-Rove.debug.xcconfig */,
+				899703A00809CDA79CA41815 /* Pods-Rove.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -177,13 +177,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Rove" */;
 			buildPhases = (
-				B8C8DF1FEE2FC2642CCA35FF /* [CP] Check Pods Manifest.lock */,
+				05539F02248348235CDA250A /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				DA3B89A87BB1F1EECBD0F4B0 /* [CP] Embed Pods Frameworks */,
-				AC9771000A2F4A7BCAD88250 /* [CP] Copy Pods Resources */,
+				33F8869B754C8EDC4F76078C /* [CP] Embed Pods Frameworks */,
+				71376D9224DD5D3B0976BD80 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -262,24 +262,7 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		AC9771000A2F4A7BCAD88250 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		B8C8DF1FEE2FC2642CCA35FF /* [CP] Check Pods Manifest.lock */ = {
+		05539F02248348235CDA250A /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -301,7 +284,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		DA3B89A87BB1F1EECBD0F4B0 /* [CP] Embed Pods Frameworks */ = {
+		33F8869B754C8EDC4F76078C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -316,6 +299,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		71376D9224DD5D3B0976BD80 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Rove/Pods-Rove-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -348,7 +348,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D9E00668F0A3350F27D21442 /* Pods-Rove.debug.xcconfig */;
+			baseConfigurationReference = 53AB5785B1421BF41353456C /* Pods-Rove.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -382,7 +382,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2383F6761172444941EBB928 /* Pods-Rove.release.xcconfig */;
+			baseConfigurationReference = 899703A00809CDA79CA41815 /* Pods-Rove.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

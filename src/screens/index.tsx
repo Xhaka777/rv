@@ -20,7 +20,7 @@ import { EditPreferences } from './HomeScreens/EditPreferences';
 import { Footages } from './HomeScreens/Footages';
 import { FootageDetails } from './HomeScreens/FootageDetails';
 import { Videos } from './HomeScreens/Videos';
-import { HeartRateMonitor } from './HomeScreens/HeartRateMonitor';
+// import { HeartRateMonitor } from './HomeScreens/HeartRateMonitor';
 import { Premium } from './HomeScreens/Premium';
 import { PasscodeSettings } from './HomeScreens/PasscodeSettings';
 import { HeadsUp } from './HomeScreens/HeadsUp';
@@ -57,7 +57,7 @@ export {
   Footages,
   FootageDetails,
   Videos,
-  HeartRateMonitor,
+  // HeartRateMonitor,
   Premium,
   PasscodeSettings,
   HeadsUp,

@@ -199,6 +199,24 @@ const getThreatReportReputation = () => {
   return httpService().get('threat_reports/threat_reports/reputation/');
 };
 
+const registerDeviceToken = (body: any) => {
+  console.log('🌐 [API DEBUG] registerDeviceToken called with:', JSON.stringify(body, null, 2));
+  
+  // Create axios instance with CSRF header
+  return httpService().post('incidents/register_device/', body, {
+    headers: {
+      'X-CSRFToken': 'safe',
+    },
+  })
+    .then(response => {
+      console.log('🌐 [API DEBUG] registerDeviceToken response:', JSON.stringify(response.data, null, 2));
+      return response;
+    })
+    .catch(error => {
+      console.error('🌐 [API DEBUG] registerDeviceToken error:', error.response?.data || error);
+      throw error;
+    });
+};
 
 export const HomeAPIS = {
   // New Endpoints
@@ -232,5 +250,6 @@ export const HomeAPIS = {
   getThreatReportUploadStatus,
   getThreatReportReputation,
   //
+  registerDeviceToken,
 
 };

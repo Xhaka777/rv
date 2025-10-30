@@ -27,7 +27,7 @@ export const RouteNames = {
     Footages: 'Footages',
     FootageDetails: 'FootageDetails',
     Videos: 'Videos',
-    HeartRateMonitor: "HeartRateMonitor",
+    // HeartRateMonitor: "HeartRateMonitor",
     Premium: 'Premium',
     PasscodeSettings: 'PasscodeSettings',
     TrustedContacts: 'TrustedContacts',

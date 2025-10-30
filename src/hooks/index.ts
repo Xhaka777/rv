@@ -1,5 +1,5 @@
 import useThemeHook from './useThemeHook/useThemeHook';
-import useHeartRateHook from './useHeartRateHook/useHeartRateHook';
+// import useHeartRateHook from './useHeartRateHook/useHeartRateHook';
 import { useSpeechToText } from './useSpeechToText';
 
-export { useThemeHook, useHeartRateHook, useSpeechToText };
+export { useThemeHook, useSpeechToText };
