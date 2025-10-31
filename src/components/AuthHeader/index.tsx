@@ -165,26 +165,10 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
                       }
                     }}
                     title={t('Continue with Apple')}
-                    source={Images.IOS}
+                    source={Images.Apple}
                     isIcon
-                    customStyles={{ 
-                      marginTop: Metrix.VerticalSize(10),
-                      backgroundColor: '#000000',
-                      borderColor: '#000000',
-                    }}
                     textColor={'#FFFFFF'}
                   />
-                )}
-                
-                {/* DEBUG: Show Apple button state */}
-                {__DEV__ && (
-                  <View style={{ marginTop: 10, padding: 10, backgroundColor: '#f0f0f0' }}>
-                    <Text style={{ fontSize: 12, color: '#000' }}>
-                      DEBUG: isAppleBtn={isAppleBtn ? 'true' : 'false'}, 
-                      Platform={Platform.OS}, 
-                      hasApplePress={onApplePress ? 'yes' : 'no'}
-                    </Text>
-                  </View>
                 )}
               </View>
             )}

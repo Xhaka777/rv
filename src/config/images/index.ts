@@ -193,7 +193,9 @@ const Images = {
   RespondersCam: require('../../assets/icons/responders_cam.png'),
   LocalDownload: require('../../assets/icons/local_download.png'),
   Clock: require('../../assets/icons/clock.png'),
-  Ear: require('../../assets/icons/new_ear.png')
+  Ear: require('../../assets/icons/new_ear.png'),
+
+  Apple: require('../../assets/icons/apple.png')
 };
 
 export default Images;

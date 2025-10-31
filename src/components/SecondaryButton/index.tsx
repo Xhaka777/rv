@@ -40,7 +40,7 @@ export const SecondaryButton: FC<PrimaryButtonProps> = ({
   customStyles,
   isIcon,
   source,
-  circleWidth = 27,
+  circleWidth = 20, // Reduced from 27 to 20 for smaller icon
   ...rest
 }) => (
   <TouchableOpacity
@@ -52,48 +52,32 @@ export const SecondaryButton: FC<PrimaryButtonProps> = ({
         backgroundColor: disabled
           ? Utills.selectedThemeColors().TextInputPlaceholserColor
           : color,
-        // borderColor: Utills.selectedThemeColors().TextInputBorderColor,
         width: width,
       },
       customStyles,
     ]}
     disabled={disabled || isLoading}
     {...rest}>
-    {isIcon && source && (
-      <RoundImageContainer
-        circleWidth={circleWidth}
-        source={source}
-        resizeMode="contain"
-        styles={{
-          // borderWidth:1,
-          marginLeft: Metrix.HorizontalSize(10),
-        }}
-        // imageStyle={{
-        //   width: Metrix.HorizontalSize(20),
-        //   height: Metrix.VerticalSize(26),
-        //   marginTop: 3,
-        //   alignSelf: 'center',
-        // }}
-      />
-    )}
-
+    
     {isLoading ? (
       <ActivityIndicator color={textColor} />
     ) : (
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          // borderWidth: 1,
-          // borderColor: 'red',
-          width: '70%',
-        }}>
+      <View style={styles.contentContainer}>
+        {isIcon && source && (
+          <Image
+            source={source}
+            style={styles.iconStyle}
+            resizeMode="contain"
+          />
+        )}
         <CustomText.MediumText
-          customStyle={{
-            color: textColor,
-            fontSize: FontType.FontMedium,
-          }}>
+          customStyle={[
+            styles.titleText,
+            {
+              color: textColor,
+              marginLeft: isIcon ? Metrix.HorizontalSize(8) : 0, // Small gap between icon and text
+            }
+          ]}>
           {title}
         </CustomText.MediumText>
       </View>
@@ -104,18 +88,23 @@ export const SecondaryButton: FC<PrimaryButtonProps> = ({
 const styles = StyleSheet.create({
   buttonContainer: {
     height: Metrix.VerticalSize(50),
-    // justifyContent: 'center',
+    justifyContent: 'center', // Center the entire content
     alignItems: 'center',
-    flexDirection: 'row',
     borderRadius: Metrix.VerticalSize(10),
     marginVertical: Metrix.VerticalSize(10),
     borderColor: Utills.selectedThemeColors().TextInputBorderColor,
     borderWidth: 2,
-
-    // ...Metrix.createShadow(),
   },
-  // titleText:{
-  //   fontFamily: Fonts['Futura-Medium'],
-  //   fontSize: Metrix.customFontSize(16),
-  // }
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the icon and text together
+  },
+  iconStyle: {
+    width: Metrix.HorizontalSize(16), // Smaller icon size
+    height: Metrix.VerticalSize(16),  // Smaller icon size
+  },
+  titleText: {
+    fontSize: FontType.FontMedium,
+  },
 });
