@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import {
   appleAuth,
   AppleRequestOperation,
-  AppleAuthRequestScope,
+  AppleRequestScope,
   AppleCredentialState,
 } from '@invertase/react-native-apple-authentication';
 
@@ -16,7 +16,7 @@ export const performAppleSignIn = async () => {
     // Start the sign-in request
     const appleAuthRequestResponse = await appleAuth.performRequest({
       requestedOperation: AppleRequestOperation.LOGIN,
-      requestedScopes: [AppleAuthRequestScope.EMAIL, AppleAuthRequestScope.FULL_NAME],
+      requestedScopes: [AppleRequestScope.EMAIL, AppleRequestScope.FULL_NAME],
     });
 
     // Get current authentication state for user

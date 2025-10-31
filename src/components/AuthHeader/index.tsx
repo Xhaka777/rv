@@ -42,13 +42,13 @@ type AuthHeaderProps = PrimaryButtonProps & {
   isBtn?: boolean;
   isLogo?: boolean;
   isSecondaryBtn?: boolean;
-  isAppleBtn?: boolean; // NEW: Apple button prop
+  isAppleBtn?: boolean;
   isupperText?: boolean;
   children: ReactNode;
   title?: string;
   childrenView?: any;
   onSecPress?: () => void;
-  onApplePress?: () => void; // NEW: Apple press handler
+  onApplePress?: () => void;
 };
 
 export const AuthHeader: React.FC<AuthHeaderProps> = ({
@@ -60,17 +60,23 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
   title,
   onPress,
   onSecPress,
-  onApplePress, // NEW: Apple press handler
+  onApplePress,
   onBottomTextPress,
   isbottomText,
   isBtn,
   isLogo = true,
   customStyles,
   isSecondaryBtn,
-  isAppleBtn = false, // NEW: Apple button flag
+  isAppleBtn = false,
   isupperText,
   childrenView,
 }) => {
+
+  // DEBUG: Log Apple button state
+  console.log('🍎 AuthHeader - isAppleBtn:', isAppleBtn);
+  console.log('🍎 AuthHeader - Platform.OS:', Platform.OS);
+  console.log('🍎 AuthHeader - onApplePress:', typeof onApplePress);
+
   return (
     <MainContainer
       customeStyle={{
@@ -137,16 +143,27 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
 
                 {/* Google Sign-In Button */}
                 <SecondaryButton
-                  onPress={onSecPress}
+                  onPress={() => {
+                    console.log('🟢 Google button pressed');
+                    onSecPress && onSecPress();
+                  }}
                   title={t('Continue with Google')}
                   source={Images.GoogleLogo}
                   isIcon
                 />
 
-                {/* NEW: Apple Sign-In Button - Only show on iOS */}
-                {/* {isAppleBtn && Platform.OS === 'ios' && (
+                {/* Apple Sign-In Button - Only show on iOS when supported */}
+                {isAppleBtn && Platform.OS === 'ios' && (
                   <SecondaryButton
-                    onPress={onApplePress}
+                    onPress={() => {
+                      console.log('🍎 Apple button pressed in AuthHeader');
+                      console.log('🍎 onApplePress function:', onApplePress);
+                      if (onApplePress) {
+                        onApplePress();
+                      } else {
+                        console.log('🍎 ERROR: onApplePress is not defined!');
+                      }
+                    }}
                     title={t('Continue with Apple')}
                     source={Images.IOS}
                     isIcon
@@ -155,9 +172,20 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
                       backgroundColor: '#000000',
                       borderColor: '#000000',
                     }}
-                    textColor={Utills.selectedThemeColors().PrimaryTextColor}
+                    textColor={'#FFFFFF'}
                   />
-                )} */}
+                )}
+                
+                {/* DEBUG: Show Apple button state */}
+                {__DEV__ && (
+                  <View style={{ marginTop: 10, padding: 10, backgroundColor: '#f0f0f0' }}>
+                    <Text style={{ fontSize: 12, color: '#000' }}>
+                      DEBUG: isAppleBtn={isAppleBtn ? 'true' : 'false'}, 
+                      Platform={Platform.OS}, 
+                      hasApplePress={onApplePress ? 'yes' : 'no'}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
             {isbottomText && (
