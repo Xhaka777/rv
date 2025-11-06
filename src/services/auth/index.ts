@@ -1,4 +1,3 @@
-// import httpService from '../https.service';
 import httpService from '../https.service'
 
 const userLogin = (body: object) => {

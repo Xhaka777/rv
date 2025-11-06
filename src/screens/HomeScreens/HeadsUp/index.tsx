@@ -49,18 +49,22 @@ const { width, height } = Dimensions.get('window');
 
 interface ThreatDetails {
   id: string;
+  realId?: string;
   icon: any;
   label: string;
   streetName: string;
   image?: string;
+  photo_urls?: string[]; // Add this field
   timestamp: string;
   description?: string;
   latitude: number;
   longitude: number;
   user: string;
   created_at?: string;
-  is_automated: boolean;
-
+  ai_classification?: string;
+  ai_confidence?: number;
+  classification_details?: string;
+  is_automated?: boolean;
 }
 
 export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
@@ -342,13 +346,16 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   // Function to handle threat marker tap
   const handleThreatMarkerPress = async (threat: any) => {
     const streetName = await getStreetName(threat.latitude, threat.longitude);
+    const realThreatId = threat.realId || threat.id;
 
     const threatDetails: ThreatDetails = {
-      id: threat.id.toString(),
+      id: realThreatId,
+      realId: threat.realId,
       icon: threat.icon || getThreatIcon(threat.threat_type || 'General'),
       label: threat.threat_type || 'General Threat',
       streetName: streetName,
       image: threat.image,
+      photo_urls: threat.photo_urls || [], // Include all photos
       timestamp: threat.timestamp,
       created_at: threat.created_at,
       description: threat.description,
@@ -602,29 +609,30 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       const now = new Date().toISOString();
 
       const newThreat = {
-        id: Date.now(),
+        id: Date.now(), // Temporary local ID
         latitude: draggedThreatLocation.latitude,
         longitude: draggedThreatLocation.longitude,
         timestamp: now,
-        created_at: now, // Add created_at for consistency
+        created_at: now,
         description: additionalDetails || `${tempThreatData.label} reported`,
         threat_type: tempThreatData.label,
         report_type: tempThreatData.label.toLowerCase(),
         image: image,
         icon: tempThreatData.icon,
-        user: userData?.user?.id, // Add current user ID to new threats
+        user: userData?.user?.id,
       };
 
-      // Add threat to current screen instead of navigating
+      // Add threat to current screen with temporary ID
       setThreats(prevThreats => [...prevThreats, newThreat]);
 
-      // Create the threat report in backend
+      // Create the threat report in backend and update with real ID
       createThreadZone(
         newThreat.latitude,
         newThreat.longitude,
         newThreat.description,
         newThreat.description,
-        newThreat.image
+        newThreat.image,
+        newThreat.id // Pass the temporary ID for later updating
       );
 
       closeAllSheets();
@@ -723,15 +731,16 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       });
   };
 
+  // In your loadThreats function, update the threat mapping:
   const loadThreats = async () => {
     try {
       const response = await HomeAPIS.getThreatReports();
       const threatMarkers = response?.data?.results?.map((item: any) => {
-        // Check if this is an automated threat
         const isAutomated = item?.report_type === 'automated_alert' || item?.is_automated;
 
         return {
           id: item?.id,
+          realId: item?.id,
           latitude: parseFloat(item?.latitude),
           longitude: parseFloat(item?.longitude),
           timestamp: item?.created_at,
@@ -740,13 +749,15 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
             ? "This is an automated alert triggered by a user's device, detecting signs of a potential threat or assault."
             : 'Threat Location'),
           threat_type: item?.report_type,
-          image: item?.photo_url,
+          // UPDATED: Handle images properly
+          image: item?.photo_url || (item?.photo_urls?.length > 0 ? item.photo_urls[0] : null), // Original image
+          photo_urls: item?.photo_urls || [], // All photos (including original + additional)
           icon: getThreatIcon(item?.report_type),
           confirm_votes: item?.confirm_votes,
           deny_votes: item?.deny_votes,
-          user_vote: isAutomated ? 'confirm' : item?.user_vote, // Always confirmed for automated
+          user_vote: isAutomated ? 'confirm' : item?.user_vote,
           user: item?.user,
-          is_automated: isAutomated, // Flag to identify automated threats
+          is_automated: isAutomated,
         };
       });
 
@@ -760,12 +771,14 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     }
   };
 
+
   const createThreadZone = async (
     latitude: number,
     longitude: number,
     address: string,
     additionalDetails?: string,
-    image?: string
+    image?: string,
+    tempId?: number
   ) => {
     try {
       const threatTypeMap: { [key: string]: string } = {
@@ -777,23 +790,60 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         'Mass event': 'mass_event',
       };
 
-      const body = {
+      // 1. Create threat without photo first
+      const threatData = {
         location: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
         latitude: latitude.toFixed(6),
         longitude: longitude.toFixed(6),
         description: additionalDetails || address,
         report_type: threatTypeMap[tempThreatData?.label] || 'harassment',
         user_id: userData?.user?.id,
-        photo: image,
+        timestamp: new Date().toISOString(),
+        // No photo field - create threat without image first
       };
 
-      console.log('Saving threat report to backend:', body);
-      await HomeAPIS.sendThreatReports(body);
-      console.log('Threat report saved to backend successfully');
+      console.log('Saving threat report to backend (without photo):', threatData);
+      const response = await HomeAPIS.sendThreatReports(threatData);
+      console.log('Threat report saved to backend successfully:', response.data);
 
+      // 2. If there's a photo, add it immediately after threat creation
+      if (image && response.data?.id) {
+        try {
+          console.log('Adding photo to newly created threat:', response.data.id);
+          const photoResponse = await HomeAPIS.addPhotosToThreatReport(response.data.id, [image]);
+          console.log('Photo added successfully to threat:', photoResponse.data);
+        } catch (photoError) {
+          console.error('Error adding photo to threat:', photoError);
+          // Don't fail the entire process if photo upload fails
+          Alert.alert(
+            'Threat Created',
+            'Threat was created successfully, but the photo could not be uploaded. You can add photos later from the threat details.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+
+      // 3. Update threat with real ID from backend response
+      if (response.data?.id && tempId) {
+        console.log('🔄 Updating threat with real ID:', response.data.id);
+        setThreats(prevThreats =>
+          prevThreats.map(threat =>
+            threat.id === tempId
+              ? {
+                ...threat,
+                id: response.data.id, // Update with real UUID
+                realId: response.data.id, // Store as backup
+              }
+              : threat
+          )
+        );
+      }
+
+      // 4. Reload threats to get the complete data including any photos
       setTimeout(() => {
         loadThreats();
       }, 1000);
+
     } catch (error) {
       console.error('Error creating threat report:', error);
       Alert.alert('Error', 'Failed to save threat report. Please try again.');
@@ -1163,6 +1213,50 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       return `${months}m`;
     }
   };
+
+  const handleThreatImageAdded = useCallback((threatId: string, response: any) => {
+    console.log('🔄 Updating threat with new images:', threatId, response);
+
+    // Update the threats state with new image data
+    setThreats(prevThreats =>
+      prevThreats.map(threat => {
+        if (threat.id === threatId || threat.realId === threatId) {
+          return {
+            ...threat,
+            // FIXED: Keep the original image, only update photo_urls with all photos
+            photo_urls: response.threat_report?.photo_urls || [], // All photos from backend
+            // Don't change the main 'image' field if it already exists (preserves original)
+            ...(threat.image ? {} : { image: response.threat_report?.photo_urls?.[0] })
+          };
+        }
+        return threat;
+      })
+    );
+
+    // Also update filteredThreats
+    setFilteredThreats(prevFiltered =>
+      prevFiltered.map(threat => {
+        if (threat.id === threatId || threat.realId === threatId) {
+          return {
+            ...threat,
+            photo_urls: response.threat_report?.photo_urls || [],
+            ...(threat.image ? {} : { image: response.threat_report?.photo_urls?.[0] })
+          };
+        }
+        return threat;
+      })
+    );
+
+    // Update selectedThreatDetails if it's the same threat
+    if (selectedThreatDetails && (selectedThreatDetails.id === threatId || selectedThreatDetails.realId === threatId)) {
+      setSelectedThreatDetails(prev => prev ? {
+        ...prev,
+        photo_urls: response.threat_report?.photo_urls || [],
+        // Keep the original image if it exists
+        ...(prev.image ? {} : { image: response.threat_report?.photo_urls?.[0] })
+      } : null);
+    }
+  }, [selectedThreatDetails]);
 
   const renderSuggestionRows = (rowData: any) => {
     const title = rowData?.structured_formatting?.main_text;
@@ -1730,19 +1824,6 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         )}
       </View>
 
-      {/* Third Bottom Sheet */}
-      {/* <View style={styles.bottomSheetContainer}>
-        <ThirdBottomSheet
-          ref={thirdBottomSheetRef}
-          onComplete={confirmThreatLocation}
-          selectedThreat={tempThreatData}
-          onClose={closeAllSheets}
-          onChange={(index) => handleSheetChange(index, 'third')}
-          shouldAutoFocus={activeSheet === 'third'}
-          capturedPhoto={captureThreatPhoto}
-        />
-      </View> */}
-
       {/* Threat Details Bottom Sheet */}
       <View style={styles.bottomSheetContainer}>
         <ThreatDetailsBottomSheet
@@ -1758,8 +1839,10 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
             }
           }}
           onDelete={handleDeleteThreat}
-          currentUserId={userData?.user?.id} // Pass the current user ID
+          currentUserId={userData?.user?.id}
           userCoordinates={userCoordinates}
+          // 
+          onImageAdded={handleThreatImageAdded}
         />
       </View>
 

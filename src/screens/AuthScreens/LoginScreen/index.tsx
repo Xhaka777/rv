@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Colors,
   FontType,
@@ -18,15 +18,15 @@ import {
   RouteNames,
   Utills,
 } from '../../../config';
-import {AuthHeader, CustomInput, CustomText, Loader} from '../../../components';
-import {Formik} from 'formik';
+import { AuthHeader, CustomInput, CustomText, Loader } from '../../../components';
+import { Formik } from 'formik';
 import Schema from '../../../formik';
-import {LoginScreenProps} from '../../propTypes';
-import {useDispatch, useSelector} from 'react-redux';
-import {AuthActions, HomeActions} from '../../../redux/actions';
-import {RootState} from '../../../redux/reducers';
-import {t} from 'i18next';
-import {AuthAPIS} from '../../../services/auth';
+import { LoginScreenProps } from '../../propTypes';
+import { useDispatch, useSelector } from 'react-redux';
+import { AuthActions, HomeActions } from '../../../redux/actions';
+import { RootState } from '../../../redux/reducers';
+import { t } from 'i18next';
+import { AuthAPIS } from '../../../services/auth';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -37,7 +37,7 @@ import {
 // FIXED: Import Apple Sign-In directly from the library
 import appleAuth from '@invertase/react-native-apple-authentication';
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
   const dispatch = useDispatch();
   const [hidePassword, setHidePassword] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
     console.log('🍎 Checking Apple Sign-In support...');
     console.log('Platform:', Platform.OS);
     console.log('Platform Version:', Platform.Version);
-    
+
     if (Platform.OS === 'ios') {
       console.log('🍎 iOS detected, checking Apple Auth availability...');
       console.log('Apple Auth object:', appleAuth);
@@ -216,7 +216,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
 
   const postGoogleCred = (token: any) => {
     setLoading(true);
-    AuthAPIS.googleLogin({idToken: token})
+    AuthAPIS.googleLogin({ idToken: token })
       .then(res => {
         const userData = res?.data?.data;
         const firstLogin = !isFirstTime;
@@ -253,7 +253,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
   // FIXED: Proper Apple Sign-In implementation
   const handleAppleLogin = async () => {
     console.log('🍎 Apple login button pressed');
-    
+
     if (!isAppleSignInSupported()) {
       console.log('🍎 Apple Sign-In not supported');
       Utills.showToast('Apple Sign-In is only available on iOS 13 and later');
@@ -262,10 +262,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
 
     console.log('🍎 Starting Apple Sign-In process...');
     setLoading(true);
-    
+
     try {
       console.log('🍎 Calling appleAuth.performRequest...');
-      
+
       // Perform the Apple Sign-In request
       const appleAuthRequestResponse = await appleAuth.performRequest({
         requestedOperation: appleAuth.Operation.LOGIN,
@@ -284,7 +284,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
 
       // Extract user data from Apple response
       const { identityToken, user, email, fullName } = appleAuthRequestResponse;
-      
+
       console.log('🍎 Identity Token:', identityToken);
       console.log('🍎 User:', user);
       console.log('🍎 Email:', email);
@@ -300,35 +300,45 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
           familyName: fullName?.familyName || '',
         },
       };
-      
+
       console.log('🍎 Sending to backend:', JSON.stringify(appleAuthData, null, 2));
       postAppleCred(appleAuthData);
-      
+
     } catch (error: any) {
       console.log('🍎 Apple Sign-In Error:', error);
       console.log('🍎 Error message:', error.message);
       console.log('🍎 Error code:', error.code);
-      
+
       setLoading(false);
-      
+
       // Handle specific error codes
       if (error.code === appleAuth.Error.CANCELED) {
         console.log('🍎 User canceled Apple Sign-In');
         // Don't show error for user cancellation
         return;
       }
-      
+
       Utills.showToast('Apple Sign-In failed: ' + error.message);
     }
   };
 
   const postAppleCred = (appleData: any) => {
     console.log('🍎 Posting Apple credentials to backend...');
-    
-    AuthAPIS.appleLogin(appleData)
+
+    // Fix: Convert camelCase to snake_case for backend
+    const backendData = {
+      identity_token: appleData.identityToken,  // Changed from identityToken to identity_token
+      user: appleData.user,
+      email: appleData.email,
+      full_name: appleData.fullName,  // Also consider if backend expects full_name
+    };
+
+    console.log('🍎 Sending to backend (corrected):', JSON.stringify(backendData, null, 2));
+
+    AuthAPIS.appleLogin(backendData)
       .then(res => {
         console.log('🍎 Backend response:', JSON.stringify(res?.data, null, 2));
-        
+
         const userData = res?.data?.data;
         const firstLogin = !isFirstTime;
 
@@ -341,7 +351,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
           }),
         );
         setLoading(false);
-        
+
         if (firstLogin) {
           NavigationService.navigate(RouteNames.AuthRoutes.Preferences);
         } else {
@@ -351,7 +361,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
       .catch(err => {
         console.log('🍎 Backend error:', err);
         console.log('🍎 Backend error response:', err?.response?.data);
-        
+
         Utills.showToast(err?.response?.data?.errors?.[0]?.message || 'Apple Sign-In backend error');
         setLoading(false);
       });
@@ -369,10 +379,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
         } else if (values?.password?.length == 0) {
           Utills.showToast('Enter password');
         } else {
-          loginUser({email: values?.email, password: values?.password});
+          loginUser({ email: values?.email, password: values?.password });
         }
       }}
-      // validationSchema={Schema.LoginSchema}
+    // validationSchema={Schema.LoginSchema}
     >
       {({
         values,
@@ -384,9 +394,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({}) => {
         handleSubmit,
       }) => (
         <AuthHeader
-          heading={t('Lets Sign In')}
+          heading={t('Sign In')}
           title={t('Login')}
-          customStyles={{marginTop: Metrix.VerticalSize(20)}}
+          customStyles={{ marginTop: Metrix.VerticalSize(20) }}
           isBtn
           onSecPress={() => handleGoogleLogin()}
           onApplePress={() => handleAppleLogin()}

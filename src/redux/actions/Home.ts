@@ -22,6 +22,9 @@ export default class Action {
   static SET_HEADS_UP_RADIUS = 'SET_HEADS_UP_RADIUS';
   static SET_CURRENT_SCREEN = 'SET_CURRENT_SCREEN';
   static SET_ACTIVE_TIMER = 'SET_ACTIVE_TIMER';
+  static SET_SHOW_COUNTDOWN_FROM_SIRI = 'SET_SHOW_COUNTDOWN_FROM_SIRI';
+  static SET_SIRI_ARM_TRIGGER = 'SET_SIRI_ARM_TRIGGER';
+  static SET_SHOULD_ARM_ON_LIVESTREAM = 'SET_SHOULD_ARM_ON_LIVESTREAM';
   //Tutorial constants
   static SET_TUTORIAL_COMPLETED = 'SET_TUTORIAL_COMPLETED';
   static SET_TUTORIAL_STEP = 'SET_TUTORIAL_STEP';
@@ -175,6 +178,27 @@ export default class Action {
       type: Action.SET_ACTIVE_TIMER,
       payload,
     }
+  }
+
+  static setShowCountdownFromSiri(payload: boolean) {
+    return {
+      type: Action.SET_SHOW_COUNTDOWN_FROM_SIRI,
+      payload,
+    };
+  }
+
+  static setSiriArmTrigger(payload: boolean) {
+    return {
+      type: Action.SET_SIRI_ARM_TRIGGER,
+      payload,
+    };
+  }
+
+  static setShouldArmOnLivestream(payload: boolean) {
+    return {
+      type: Action.SET_SHOULD_ARM_ON_LIVESTREAM,
+      payload,
+    };
   }
 
   //Tutorial actions

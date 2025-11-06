@@ -33,6 +33,7 @@ import VolumeAnimatedIcon from './VolumeAnimatedIcon';
 import VolumeSimulator from './VolumeSimulator';
 import WaveformVisualizer from './WaveformVisualizer';
 import CameraScreen from './CameraScreen';
+import SiriDebugComponent from './SiriDebug';
 
 export {
   CustomText,

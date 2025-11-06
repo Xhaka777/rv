@@ -70,7 +70,9 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const dispatch = useDispatch();
   const preferenceState = useSelector((state: RootState) => state.home.preferenceState || 'AS');
   const currentIsSafeWord = useSelector((state: RootState) => state?.home?.safeWord?.isSafeWord);
-
+  const showCountdownFromSiri = useSelector((state: RootState) => state.home.showCountdownFromSiri);
+  const siriArmTrigger = useSelector((state: RootState) => state.home.siriArmTrigger);
+  const shouldArmOnLivestream = useSelector((state: RootState) => state.home.shouldArmOnLivestream);
 
   // NEW: Tutorial state selectors
   const tutorialCompleted = useSelector((state: RootState) => state.home.tutorialCompleted);
@@ -255,6 +257,34 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       showToastNotification('Recipients will get: Video Stream')
     }
   };
+
+  useEffect(() => {
+    if (siriArmTrigger) {
+      console.log('🎯 Siri arm trigger received - simulating button click');
+
+      // Reset the trigger first
+      dispatch(HomeActions.setSiriArmTrigger(false));
+
+      // Simulate the button click logic
+      if (!isThreatDetectionArmed) {
+        console.log('⏱️ Starting countdown to arm via Siri...');
+        setShowCountdown(true);
+      }
+    }
+  }, [siriArmTrigger, isThreatDetectionArmed, dispatch]);
+
+  useEffect(() => {
+    if (shouldArmOnLivestream) {
+      console.log('🎯 Should arm flag detected!');
+      // Alert.alert('LIVESTREAM EFFECT', 'Starting countdown...');
+
+      // Reset the flag
+      dispatch(HomeActions.setShouldArmOnLivestream(false));
+
+      // Start countdown
+      setShowCountdown(true);
+    }
+  }, [shouldArmOnLivestream, dispatch]);
 
   // Add this useEffect in your LiveStream component
   useEffect(() => {
@@ -988,7 +1018,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       device_token: deviceToken,
     };
 
-    console.log('body', body) 
+    console.log('body', body)
 
     console.log('📝 [DEBUG] postIncident body:', JSON.stringify(body, null, 2));
 

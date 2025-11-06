@@ -20,6 +20,8 @@ import { store } from '../redux/Store';
 import { NativeModules, NativeEventEmitter } from 'react-native';
 import { SiriShortcutsService } from '../services/siriShortcuts';
 
+const { SiriEventEmitter } = NativeModules;
+
 // Initialize AudioSessionManager with error handling
 let AudioSessionManager;
 let audioEmitter;
@@ -136,6 +138,8 @@ export const TabStack: React.FC = () => {
   const [armingTimerId, setArmingTimerId] = useState<NodeJS.Timeout | null>(null);
   const activeTimer = useSelector((state: RootState) => state.home.activeTimer || '30m');
 
+  console.log('inside the tabstack')
+
   const timerToMilliseconds = (timer: string): number => {
     const minutes = parseInt(timer.replace('m', ''));
     return minutes * 60 * 1000;
@@ -158,6 +162,17 @@ export const TabStack: React.FC = () => {
     }, duration);
     setArmingTimerId(timerId);
   }, [activeTimer, armingTimerId, dispatch]);
+
+  useEffect(() => {
+    if (SiriEventEmitter) {
+      const siriEmitter = new NativeEventEmitter(SiriEventEmitter);
+      const sub = siriEmitter.addListener('RoveArmCommand', (data) => {
+        console.log('🚀 Siri command received in JS:', data);
+        handleArmCommand(data.source || 'siri');
+      });
+      return () => sub.remove();
+    }
+  }, []);
 
   useEffect(() => {
     if (showFakeLockScreen) {
@@ -203,26 +218,13 @@ export const TabStack: React.FC = () => {
 
   const handleArmCommand = async (source: string) => {
     console.log(`🚨 ARM COMMAND from ${source}!`);
-    try {
-      const authResult = await SiriShortcutsService.authenticateForArming();
-      if (authResult.success) {
-        console.log('✅ Face ID successful');
-        NavigationService.navigate('LiveStream');
-        setTimeout(() => {
-          dispatch(HomeActions.setShowFakeLockScreen(true));
-          startArmingTimer();
-          onDisplayNotification(
-            'Rove Armed via Siri',
-            `Bodycam protection active for ${activeTimer}`
-          );
-        }, 500);
-      } else {
-        Alert.alert('Authentication Failed', 'Could not authenticate');
-      }
-    } catch (error) {
-      console.error('❌ Arming failed:', error);
-      Alert.alert('Error', 'Failed to arm Rove');
-    }
+    // Alert.alert('ARM COMMAND', `Received from ${source}`);
+
+    // Set flag to arm when LiveStream loads
+    dispatch(HomeActions.setShouldArmOnLivestream(true));
+
+    // Navigate to LiveStream
+    NavigationService.navigate('LiveStream');
   };
 
   // 🔥 EXACT SAME CLEANUP EFFECT AS OLD APPROACH

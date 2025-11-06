@@ -18,8 +18,8 @@ import { RootState } from './src/redux/reducers';
 import { useNavigationState } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { saveDeviceToken } from './src/utils/deviceTokenStorage';
-const { APNsTokenEmitter } = NativeModules;
+// import { saveDeviceToken } from './src/utils/deviceTokenStorage';
+// const { APNsTokenEmitter } = NativeModules;
 
 
 function App(): JSX.Element {
@@ -29,18 +29,18 @@ function App(): JSX.Element {
 
   console.log('isVideoMode on App.tsx: ->>>>>', isVideoMode);
 
-  useEffect(() => {
-    if (APNsTokenEmitter) {
-      const emitter = new NativeEventEmitter(APNsTokenEmitter);
+  // useEffect(() => {
+  //   if (APNsTokenEmitter) {
+  //     const emitter = new NativeEventEmitter(APNsTokenEmitter);
 
-      const sub = emitter.addListener('APNsDeviceToken', async (e) => {
-        console.log('📲 APNs token from native:', e.token);
-        await saveDeviceToken(e.token); // Save it right away
-      });
+  //     const sub = emitter.addListener('APNsDeviceToken', async (e) => {
+  //       console.log('📲 APNs token from native:', e.token);
+  //       await saveDeviceToken(e.token); // Save it right away
+  //     });
 
-      return () => sub.remove();
-    }
-  }, []);
+  //     return () => sub.remove();
+  //   }
+  // }, []);
 
   const toastConfig = {
     info: (props: ToastProps) => (

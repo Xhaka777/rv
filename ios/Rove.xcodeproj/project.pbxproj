@@ -15,6 +15,11 @@
 		1C2A82C32E2AAE9100D2F91E /* splash.json in Resources */ = {isa = PBXBuildFile; fileRef = 1C2A82C22E2AAE9100D2F91E /* splash.json */; };
 		1C2E23A22E4127CC00CDE599 /* AudioSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E23A12E4127BC00CDE599 /* AudioSessionManager.swift */; };
 		1C2E23A72E41282D00CDE599 /* AudioSessionManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C2E23A62E41282D00CDE599 /* AudioSessionManager.m */; };
+		1C5B88542EBC9FC6000291CD /* RNEventEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5B88532EBC9FC6000291CD /* RNEventEmitter.swift */; };
+		1C5B88562EBC9FEA000291CD /* RNEventEmitter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C5B88552EBC9FEA000291CD /* RNEventEmitter.m */; };
+		1C5B88582EBCAB57000291CD /* SiriEventEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5B88572EBCAB57000291CD /* SiriEventEmitter.swift */; };
+		1C7350AC2EBBCD57004E8BE5 /* RoveCommandEmitter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1C7350AB2EBBCD57004E8BE5 /* RoveCommandEmitter.m */; };
+		1C7350AE2EBBCDA1004E8BE5 /* RoveCommandEmitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7350AD2EBBCDA1004E8BE5 /* RoveCommandEmitter.swift */; };
 		1CF3F6712EAA8334007B83E8 /* VideoMerger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3F6702EAA8334007B83E8 /* VideoMerger.swift */; };
 		1CF3F6732EAA8356007B83E8 /* VideoMerger.m in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3F6722EAA8356007B83E8 /* VideoMerger.m */; };
 		1CF3F6752EAA837F007B83E8 /* RoveEventEmitter.m in Sources */ = {isa = PBXBuildFile; fileRef = 1CF3F6742EAA837F007B83E8 /* RoveEventEmitter.m */; };
@@ -46,6 +51,11 @@
 		1C2E23A12E4127BC00CDE599 /* AudioSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionManager.swift; sourceTree = "<group>"; };
 		1C2E23A52E41282D00CDE599 /* Rove-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Rove-Bridging-Header.h"; sourceTree = "<group>"; };
 		1C2E23A62E41282D00CDE599 /* AudioSessionManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AudioSessionManager.m; sourceTree = "<group>"; };
+		1C5B88532EBC9FC6000291CD /* RNEventEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RNEventEmitter.swift; sourceTree = "<group>"; };
+		1C5B88552EBC9FEA000291CD /* RNEventEmitter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNEventEmitter.m; sourceTree = "<group>"; };
+		1C5B88572EBCAB57000291CD /* SiriEventEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriEventEmitter.swift; sourceTree = "<group>"; };
+		1C7350AB2EBBCD57004E8BE5 /* RoveCommandEmitter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RoveCommandEmitter.m; sourceTree = "<group>"; };
+		1C7350AD2EBBCDA1004E8BE5 /* RoveCommandEmitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoveCommandEmitter.swift; sourceTree = "<group>"; };
 		1CF3F6702EAA8334007B83E8 /* VideoMerger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoMerger.swift; sourceTree = "<group>"; };
 		1CF3F6722EAA8356007B83E8 /* VideoMerger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = VideoMerger.m; sourceTree = "<group>"; };
 		1CF3F6742EAA837F007B83E8 /* RoveEventEmitter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RoveEventEmitter.m; sourceTree = "<group>"; };
@@ -117,6 +127,11 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				1C5B88572EBCAB57000291CD /* SiriEventEmitter.swift */,
+				1C5B88552EBC9FEA000291CD /* RNEventEmitter.m */,
+				1C5B88532EBC9FC6000291CD /* RNEventEmitter.swift */,
+				1C7350AD2EBBCDA1004E8BE5 /* RoveCommandEmitter.swift */,
+				1C7350AB2EBBCD57004E8BE5 /* RoveCommandEmitter.m */,
 				1C09E37E2EAE58AB00988F62 /* APNsTokenEmitter.m */,
 				1C09E37C2EAE583E00988F62 /* APNsTokenEmitter.swift */,
 				1CF3F6842EAC0698007B83E8 /* rove_premium.png */,
@@ -325,7 +340,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1C5B88582EBCAB57000291CD /* SiriEventEmitter.swift in Sources */,
 				1CF3F6772EAA8398007B83E8 /* RoveEventEmitter.swift in Sources */,
+				1C5B88542EBC9FC6000291CD /* RNEventEmitter.swift in Sources */,
+				1C7350AE2EBBCDA1004E8BE5 /* RoveCommandEmitter.swift in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
 				1CF3F67F2EAA84B2007B83E8 /* AudioSessionManager.m in Sources */,
 				1CF3F6832EAABFE4007B83E8 /* ArmRoveIntent.swift in Sources */,
@@ -333,10 +351,12 @@
 				1CF3F6732EAA8356007B83E8 /* VideoMerger.m in Sources */,
 				1C09E37D2EAE583E00988F62 /* APNsTokenEmitter.swift in Sources */,
 				1CF3F6752EAA837F007B83E8 /* RoveEventEmitter.m in Sources */,
+				1C7350AC2EBBCD57004E8BE5 /* RoveCommandEmitter.m in Sources */,
 				1CF3F6812EAA8954007B83E8 /* RoveIntents.intentdefinition in Sources */,
 				1C2E23A22E4127CC00CDE599 /* AudioSessionManager.swift in Sources */,
 				1CF3F6792EAA83B5007B83E8 /* SiriShortcutManager.m in Sources */,
 				1CF3F67D2EAA842F007B83E8 /* AudioSessionManager.swift in Sources */,
+				1C5B88562EBC9FEA000291CD /* RNEventEmitter.m in Sources */,
 				1C2E23A72E41282D00CDE599 /* AudioSessionManager.m in Sources */,
 				1C09E37F2EAE58AB00988F62 /* APNsTokenEmitter.m in Sources */,
 				1CF3F67B2EAA83D1007B83E8 /* SiriShortcutManager.swift in Sources */,

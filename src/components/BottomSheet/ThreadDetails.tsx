@@ -1,5 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, Share } from 'react-native'; import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, Share } from 'react-native';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 // import { GOOGLE_API_KEY } from '../../services/config';
 import Geocoder from 'react-native-geocoding';
 import { HomeAPIS } from '../../services/home';
@@ -19,17 +20,18 @@ interface ImageItem {
 
 interface ThreatDetails {
   id: string;
+  realId?: string;
   icon: any;
   label: string;
   streetName: string;
   image?: string;
+  photo_urls?: string[]; // Add this field
   timestamp: string;
   description?: string;
   latitude: number;
   longitude: number;
   user: string;
   created_at?: string;
-  // 
   ai_classification?: string;
   ai_confidence?: number;
   classification_details?: string;
@@ -42,11 +44,11 @@ interface ThreatDetailsBottomSheetProps {
   onChange: (index: number) => void;
   onConfirm?: (threatId: string) => void;
   onDeny?: (threatId: string) => void;
-  onImageAdded?: (threatId: string, newImageUrl: string) => void;
+  onImageAdded?: (threatId: string, response: any) => void; // Updated signature
   isOwnThreat?: boolean;
   onDelete?: (threatId: string) => void;
   userCoordinates?: { latitude: number; longitude: number };
-  currentUserId?: string; // Add current user ID prop
+  currentUserId?: string;
 }
 
 type ConfirmationStatus = 'unconfirmed' | 'confirmed' | 'denied' | 'loading';
@@ -86,9 +88,9 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [modalOpenTime, setModalOpenTime] = useState<Date | null>(null);
 
-    console.log('threatDetails', threatDetails);
-    console.log('currentUserId', currentUserId);
-    console.log('threat user ID', threatDetails?.user);
+    // console.log('threatDetails', threatDetails);
+    // console.log('currentUserId', currentUserId);
+    // console.log('threat user ID', threatDetails?.user);
 
     const getThreatTypeName = (label: string) => {
       const threatTypes = {
@@ -104,6 +106,25 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
       return threatTypes[label] || label.charAt(0).toUpperCase() + label.slice(1);
     };
+
+    // Get the real threat ID (UUID from backend, not timestamp)
+    const getRealThreatId = useCallback(() => {
+      if (!threatDetails) return null;
+
+      // If the id looks like a UUID (contains dashes), use it
+      if (threatDetails.id.includes('-')) {
+        return threatDetails.id;
+      }
+
+      // If we have a realId field, use that
+      if (threatDetails.realId) {
+        return threatDetails.realId;
+      }
+
+      // Log warning if we only have timestamp ID
+      console.warn('⚠️ No real UUID found for threat, using timestamp ID:', threatDetails.id);
+      return threatDetails.id;
+    }, [threatDetails]);
 
     // Check if threat belongs to current user
     const isUserOwnThreat = useCallback(() => {
@@ -151,13 +172,13 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       const isOwnThreat = isUserOwnThreat();
       const withinTimeLimit = isWithin5Minutes();
 
-      console.log('Delete button check:', {
-        isOwnThreat,
-        withinTimeLimit,
-        timeSinceCreation: calculateTimeSinceCreation(),
-        threatUser: threatDetails.user,
-        currentUser: currentUserId
-      });
+      // console.log('Delete button check:', {
+      //   isOwnThreat,
+      //   withinTimeLimit,
+      //   timeSinceCreation: calculateTimeSinceCreation(),
+      //   threatUser: threatDetails.user,
+      //   currentUser: currentUserId
+      // });
 
       if (isOwnThreat && withinTimeLimit) {
         setModalOpenTime(new Date());
@@ -341,7 +362,15 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       setConfirmationStatus('unconfirmed');
       fetchUserVoteStatus(threatDetails.id);
 
-      if (threatDetails.image) {
+      // UPDATED: Load all photos from photo_urls, not just the single image
+      if (threatDetails.photo_urls && threatDetails.photo_urls.length > 0) {
+        const allImages = threatDetails.photo_urls.map((url, index) => ({
+          id: index === 0 ? 'original' : `photo_${index}`,
+          uri: url
+        }));
+        setImages(allImages);
+      } else if (threatDetails.image) {
+        // Fallback to single image if photo_urls not available
         setImages([{
           id: 'original',
           uri: threatDetails.image
@@ -350,7 +379,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         setImages([]);
       }
 
-    }, [threatDetails, fetchUserVoteStatus]);
+    }, [threatDetails, fetchUserVoteStatus, threatDetails?.id]);
 
     const formatTimestamp = (timestamp: string) => {
       const date = new Date(timestamp);
@@ -409,18 +438,36 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       setImages(prevImages => prevImages.filter(img => img.id !== imageId));
     };
 
+    // NEW: Updated uploadAdditionalImage function to use the new PATCH API
     const uploadAdditionalImage = async (imageUri: string) => {
       if (!threatDetails) return;
+
+      const realThreatId = getRealThreatId();
+      if (!realThreatId) {
+        Alert.alert('Error', 'Cannot add photos to this threat report.');
+        setImages(prevImages => prevImages.filter(img => img.uri !== imageUri));
+        return;
+      }
+
+      if (!realThreatId.includes('-')) {
+        Alert.alert(
+          'Cannot Add Photos',
+          'Photos can only be added to threats that have been saved to the server. Please wait for the threat to be fully uploaded first.',
+          [{ text: 'OK' }]
+        );
+        setImages(prevImages => prevImages.filter(img => img.uri !== imageUri));
+        return;
+      }
 
       try {
         setIsUploadingImage(true);
 
-        const formData = new FormData();
-        formData.append('photo', {
-          uri: imageUri,
-          type: 'image/jpeg',
-          name: `additional_image_${Date.now()}.jpg`,
-        } as any);
+        console.log('📸 Adding photo to threat ID:', realThreatId);
+        console.log('[imageUri]', [imageUri])
+
+        const response = await HomeAPIS.addPhotosToThreatReport(threatDetails.id, [imageUri]);
+
+        console.log('📸 Photo added successfully:', response.data);
 
         Alert.alert(
           'Success',
@@ -428,16 +475,25 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           [{ text: 'OK' }]
         );
 
+        // UPDATED: Call onImageAdded with the full response
+        if (onImageAdded) {
+          onImageAdded(realThreatId, response.data);
+        }
+
       } catch (error) {
         console.error('Error uploading additional image:', error);
-
         setImages(prevImages => prevImages.filter(img => img.uri !== imageUri));
 
-        Alert.alert(
-          'Error',
-          'Failed to upload additional image. Please try again.',
-          [{ text: 'OK' }]
-        );
+        let errorMessage = 'Failed to upload additional image. Please try again.';
+        if (error.response?.status === 404) {
+          errorMessage = 'Threat report not found. It may have been deleted.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'You do not have permission to add photos to this threat.';
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+
+        Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
       } finally {
         setIsUploadingImage(false);
       }
@@ -475,11 +531,17 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
               )}
             </View>
             <View style={styles.sideImageContainer}>
-              <TouchableOpacity style={styles.addPhotoCard} onPress={handleAddImage}>
+              <TouchableOpacity
+                style={styles.addPhotoCard}
+                onPress={handleAddImage}
+                disabled={isUploadingImage}
+              >
                 <View style={styles.addPhotoIcon}>
                   <Camera size={20} color='#fff' />
                 </View>
-                <Text style={styles.addPhotoTextSmall}>Add a photo</Text>
+                <Text style={styles.addPhotoTextSmall}>
+                  {isUploadingImage ? 'Uploading...' : 'Add a photo'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -512,11 +574,17 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
                   </TouchableOpacity>
                 )}
               </View>
-              <TouchableOpacity style={styles.addPhotoCardSmall} onPress={handleAddImage}>
+              <TouchableOpacity
+                style={styles.addPhotoCardSmall}
+                onPress={handleAddImage}
+                disabled={isUploadingImage}
+              >
                 <View style={styles.addPhotoIconSmall}>
                   <Camera size={20} color='#fff' />
                 </View>
-                <Text style={styles.addPhotoTextTiny}>Add photo</Text>
+                <Text style={styles.addPhotoTextTiny}>
+                  {isUploadingImage ? 'Uploading...' : 'Add photo'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -558,11 +626,17 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
                 </View>
               )}
             </View>
-            <TouchableOpacity style={styles.addPhotoCardSmall} onPress={handleAddImage}>
+            <TouchableOpacity
+              style={styles.addPhotoCardSmall}
+              onPress={handleAddImage}
+              disabled={isUploadingImage}
+            >
               <View style={styles.addPhotoIconSmall}>
                 <Camera size={20} color='#fff' />
               </View>
-              <Text style={styles.addPhotoTextTiny}>Add photo</Text>
+              <Text style={styles.addPhotoTextTiny}>
+                {isUploadingImage ? 'Uploading...' : 'Add photo'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -584,6 +658,9 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       try {
         setConfirmationStatus('loading');
 
+        // Use the real threat ID for voting
+        const realThreatId = getRealThreatId();
+
         // Prepare complete vote data as expected by API
         const voteData = {
           location: `${threatDetails.latitude}, ${threatDetails.longitude}`,
@@ -599,9 +676,9 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         };
 
         console.log('Sending complete vote data:', JSON.stringify(voteData, null, 2));
-        console.log('Threat ID:', threatDetails.id);
+        console.log('Real Threat ID:', realThreatId);
 
-        const response = await HomeAPIS.voteThreatReport(threatDetails.id, voteData);
+        const response = await HomeAPIS.voteThreatReport(realThreatId, voteData);
 
         console.log('Vote confirmed successfully:', response);
 
@@ -641,6 +718,9 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       try {
         setConfirmationStatus('loading');
 
+        // Use the real threat ID for voting
+        const realThreatId = getRealThreatId();
+
         // Prepare complete vote data as expected by API
         const voteData = {
           location: `${threatDetails.latitude}, ${threatDetails.longitude}`,
@@ -657,7 +737,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
         console.log('Sending complete deny vote data:', JSON.stringify(voteData, null, 2));
 
-        const response = await HomeAPIS.voteThreatReport(threatDetails.id, voteData);
+        const response = await HomeAPIS.voteThreatReport(realThreatId, voteData);
 
         setConfirmationStatus('denied');
         onDeny?.(threatDetails.id);

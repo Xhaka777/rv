@@ -16,17 +16,17 @@ class AppDelegate: RCTAppDelegate {
     self.dependencyProvider = RCTAppDependencyProvider()
     self.initialProps = [:]
 
-    // 👉 Request notification permission and register for APNs
-    UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-      if granted {
-        print("✅ Notification permission granted")
-        DispatchQueue.main.async {
-          UIApplication.shared.registerForRemoteNotifications()
-        }
-      } else {
-        print("❌ Notification permission not granted: \(String(describing: error))")
-      }
-    }
+    // Request notification permission and register for APNs
+    // UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+    //   if granted {
+    //     print(" Notification permission granted")
+    //     DispatchQueue.main.async {
+    //       UIApplication.shared.registerForRemoteNotifications()
+    //     }
+    //   } else {
+    //     print("Notification permission not granted: \(String(describing: error))")
+    //   }
+    // }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -49,25 +49,32 @@ class AppDelegate: RCTAppDelegate {
     open url: URL,
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
-    print("📱 Received URL: \(url)")
+    print("📱 AppDelegate received URL: \(url)")
+    print("📱 URL scheme: \(url.scheme ?? "nil")")
+    print("📱 URL host: \(url.host ?? "nil")")
+    print("📱 Full URL string: \(url.absoluteString)")
 
     // Check if it's our arm command
-    if url.scheme == "rove", url.host == "arm" {
-      print("🎯 Arm command detected via deep link!")
-
-      NotificationCenter.default.post(
-        name: Notification.Name("RoveArmCommand"),
-        object: nil,
-        userInfo: ["action": "arm", "source": "deeplink"]
-      )
-      return true
+    if url.scheme == "rove" {
+      print("🎯 Rove URL scheme detected!")
+      
+      if url.absoluteString == "rove://arm" {
+        print("🎯 Arm command detected via deep link!")
+        
+        NotificationCenter.default.post(
+          name: Notification.Name("RoveArmCommand"),
+          object: nil,
+          userInfo: ["action": "arm", "source": "deeplink"]
+        )
+        return true
+      }
     }
 
     // Pass to React Native LinkingManager
+    print("📱 Passing URL to RCTLinkingManager...")
     return RCTLinkingManager.application(app, open: url, options: options)
   }
 
-  // MARK: - Siri Shortcuts
   override func application(
     _ application: UIApplication,
     continue userActivity: NSUserActivity,
@@ -78,11 +85,22 @@ class AppDelegate: RCTAppDelegate {
     if userActivity.activityType == "com.rove.arm" {
       print("🎯 Arm command detected via Siri!")
 
+      // Record it for later but DO NOT touch React Native yet
+      SiriEventEmitter.lastEvent = ["source": "siri"]
+      
+      // Post notification for native side only (safe)
       NotificationCenter.default.post(
         name: Notification.Name("RoveArmCommand"),
         object: nil,
         userInfo: ["action": "arm", "source": "siri"]
       )
+
+      // 🔒 Wait for a short period before trying to emit
+      DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+        print("✅ Attempting to emit Siri event after delay")
+        SiriEventEmitter.emit(source: "siri")
+      }
+
       return true
     }
 

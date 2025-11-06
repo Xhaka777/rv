@@ -23,6 +23,10 @@ interface AppState {
   showFakeLockScreen: boolean,
   headsUpRadius: number;
   activeTimer: string;
+  showCountdownFromSiri: boolean,
+  siriArmTrigger: boolean,
+  shouldArmOnLivestream: boolean,
+
   //
   headsUpfirstTime?: boolean;
   tutorialCompleted?: boolean;
@@ -58,6 +62,10 @@ const initialState: ImmutableObject<AppState> = Immutable<AppState>({
   showFakeLockScreen: false,
   headsUpRadius: 3,
   activeTimer: '30m',
+  showCountdownFromSiri: false,
+  siriArmTrigger: false,
+  shouldArmOnLivestream: false,
+
   //
   headsUpfirstTime: true,
   tutorialCompleted: false,
@@ -189,6 +197,24 @@ export default (state = initialState, action: { type: any; payload: any }) => {
     case Action.SET_ACTIVE_TIMER: {
       return Immutable(state).merge({
         activeTimer: action.payload,
+      });
+    }
+
+    case Action.SET_SHOW_COUNTDOWN_FROM_SIRI: {
+      return Immutable(state).merge({
+        showCountdownFromSiri: action.payload,
+      });
+    }
+
+    case Action.SET_SIRI_ARM_TRIGGER: {
+      return Immutable(state).merge({
+        siriArmTrigger: action.payload,
+      });
+    }
+
+    case Action.SET_SHOULD_ARM_ON_LIVESTREAM: {
+      return Immutable(state).merge({
+        shouldArmOnLivestream: action.payload,
       });
     }
 

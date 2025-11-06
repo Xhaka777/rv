@@ -80,7 +80,7 @@ const stopRecording = (body: any) => {
   return httpService().post('incidents/stop-recording/', body)
     .then(response => {
       console.log('🌐 [API DEBUG] stopRecording Full Response:', JSON.stringify(response.data, null, 2));
-      
+
       // Log specific Agora fields
       if (response.data?.incident_updated) {
         console.log('🌐 [API DEBUG] Incident Updated:');
@@ -89,7 +89,7 @@ const stopRecording = (body: any) => {
         console.log('  - recording_type:', response.data.incident_updated.recording_type);
         console.log('  - live_link:', response.data.incident_updated.live_link);
       }
-      
+
       return response;
     })
     .catch(error => {
@@ -201,9 +201,8 @@ const getThreatReportReputation = () => {
 
 const registerDeviceToken = (body: any) => {
   console.log('🌐 [API DEBUG] registerDeviceToken called with:', JSON.stringify(body, null, 2));
-  
-  // Create axios instance with CSRF header
-  return httpService().post('incidents/register_device/', body, {
+
+  return httpService().post('incidents/register-device/', body, {
     headers: {
       'X-CSRFToken': 'safe',
     },
@@ -214,6 +213,40 @@ const registerDeviceToken = (body: any) => {
     })
     .catch(error => {
       console.error('🌐 [API DEBUG] registerDeviceToken error:', error.response?.data || error);
+      throw error;
+    });
+};
+
+
+const addPhotosToThreatReport = (threatId: string, photos: string[]) => {
+  console.log('🌐 [API DEBUG] addPhotosToThreatReport called with:', {
+    threatId,
+    photosCount: photos.length
+  });
+
+  const formData = new FormData();
+
+  // Use EXACTLY the same format as sendThreatReports which works
+  photos.forEach((photoUri, index) => {
+    formData.append('photos', {
+      uri: photoUri,
+      type: 'image/jpeg',
+      name: `additional_photo_${index}_${Date.now()}.jpg`,
+    } as any); // The 'as any' is important for TypeScript
+  });
+
+  // Use EXACTLY the same httpService call as sendThreatReports
+  return httpService().patch(`threat_reports/threat_reports/${threatId}/add-photos/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+    .then(response => {
+      console.log('🌐 [API DEBUG] addPhotosToThreatReport response:', JSON.stringify(response.data, null, 2));
+      return response;
+    })
+    .catch(error => {
+      console.error('🌐 [API DEBUG] addPhotosToThreatReport error:', error.response?.data || error);
       throw error;
     });
 };
@@ -251,5 +284,6 @@ export const HomeAPIS = {
   getThreatReportReputation,
   //
   registerDeviceToken,
-
+  // NEW: Add photos to threat
+  addPhotosToThreatReport,
 };
