@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, StatusBar, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Animated, StatusBar, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { CustomText } from '../CustomText';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/reducers';
+import { Images } from '../../config'; // Make sure to import Images
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -138,6 +139,13 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
 
             {/* Countdown Timer - Fixed at bottom */}
             <View style={styles.countdownContainer}>
+                {/* RoveWave Image */}
+                <Image 
+                    source={Images.RoveWave} 
+                    style={styles.roveWaveImage}
+                    resizeMode="contain"
+                />
+                {/* Countdown Time */}
                 <Text style={styles.countdownTime}>
                     {formatCountdownTime(remainingTime)}
                 </Text>
@@ -191,6 +199,13 @@ const styles = StyleSheet.create({
         right: 0,
         alignItems: 'center',
         paddingBottom: 20,
+    },
+    roveWaveImage: {
+        width: 60, // Adjust size as needed
+        height: 60, // Adjust size as needed
+        marginBottom: 10, // Space between image and countdown
+        tintColor: '#FFFFFF', // Make it white to match the theme
+        opacity: 0.8, // Slight opacity to match the subtle design
     },
     countdownTime: {
         color: '#FFFFFF',

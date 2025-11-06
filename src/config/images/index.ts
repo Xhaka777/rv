@@ -195,7 +195,8 @@ const Images = {
   Clock: require('../../assets/icons/clock.png'),
   Ear: require('../../assets/icons/new_ear.png'),
 
-  Apple: require('../../assets/icons/apple.png')
+  Apple: require('../../assets/icons/apple.png'),
+  RoveWave: require('../../assets/icons/rove_wave.png'),
 };
 
 export default Images;
