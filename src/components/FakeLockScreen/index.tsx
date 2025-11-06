@@ -1,7 +1,8 @@
-// In src/components/FakeLockScreen/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, StatusBar, TouchableOpacity, Dimensions } from 'react-native';
 import { CustomText } from '../CustomText';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/reducers';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -15,20 +16,57 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const [isFirstRender, setIsFirstRender] = useState(true);
 
+    // Get active timer from Redux
+    const activeTimer = useSelector((state: RootState) => state.home.activeTimer || '30m');
+    
+    // Countdown state
+    const [remainingTime, setRemainingTime] = useState(0);
+    const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Convert timer string to seconds
+    const timerToSeconds = (timer: string): number => {
+        const minutes = parseInt(timer.replace('m', ''));
+        return minutes * 60;
+    };
+
+    // Format seconds to MM:SS
+    const formatCountdownTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
     useEffect(() => {
         if (visible) {
-            // Update time every second
+            // Initialize countdown time based on active timer
+            const initialSeconds = timerToSeconds(activeTimer);
+            setRemainingTime(initialSeconds);
+
+            // Update regular time every second
             const timeInterval = setInterval(() => {
                 setCurrentTime(new Date());
             }, 1000);
 
-            // For first render (from countdown), show immediately
-            // For subsequent renders (like returning from background), use fade
+            // Start countdown
+            countdownIntervalRef.current = setInterval(() => {
+                setRemainingTime(prevTime => {
+                    if (prevTime <= 1) {
+                        // Timer expired - auto unlock
+                        if (countdownIntervalRef.current) {
+                            clearInterval(countdownIntervalRef.current);
+                        }
+                        onUnlock(); // This will trigger the automatic disarm
+                        return 0;
+                    }
+                    return prevTime - 1;
+                });
+            }, 1000);
+
+            // Animation handling
             if (isFirstRender) {
-                fadeAnim.setValue(1); // Show immediately
+                fadeAnim.setValue(1);
                 setIsFirstRender(false);
             } else {
-                // Fade in for subsequent appearances
                 Animated.timing(fadeAnim, {
                     toValue: 1,
                     duration: 500,
@@ -36,10 +74,20 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
                 }).start();
             }
 
-            return () => clearInterval(timeInterval);
+            return () => {
+                clearInterval(timeInterval);
+                if (countdownIntervalRef.current) {
+                    clearInterval(countdownIntervalRef.current);
+                }
+            };
         } else {
             // Reset for next time
             setIsFirstRender(true);
+            // Clear countdown interval
+            if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+            }
             // Fade out
             Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -47,7 +95,7 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
                 useNativeDriver: true,
             }).start();
         }
-    }, [visible]);
+    }, [visible, activeTimer, onUnlock]);
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString([], { 
@@ -77,7 +125,7 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
                 onPress={onUnlock}
                 activeOpacity={1}
             >
-                {/* Time display */}
+                {/* Time display - Centered */}
                 <View style={styles.timeContainer}>
                     <Text style={styles.timeText}>
                         {formatTime(currentTime)}
@@ -87,6 +135,13 @@ const FakeLockScreen: React.FC<FakeLockScreenProps> = ({ visible, onUnlock }) =>
                     </Text>
                 </View>
             </TouchableOpacity>
+
+            {/* Countdown Timer - Fixed at bottom */}
+            <View style={styles.countdownContainer}>
+                <Text style={styles.countdownTime}>
+                    {formatCountdownTime(remainingTime)}
+                </Text>
+            </View>
         </Animated.View>
     );
 };
@@ -128,6 +183,22 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         marginTop: 8,
         opacity: 0.8,
+    },
+    countdownContainer: {
+        position: 'absolute',
+        bottom: 0, // Position from bottom - adjust this value as needed
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        paddingBottom: 20,
+    },
+    countdownTime: {
+        color: '#FFFFFF',
+        fontSize: 28,
+        fontWeight: '100',
+        fontFamily: 'SF Pro Display',
+        letterSpacing: 1,
+        textAlign: 'center',
     },
 });
 

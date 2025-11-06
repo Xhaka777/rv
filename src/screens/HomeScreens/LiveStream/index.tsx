@@ -1250,7 +1250,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         clientRoleType: ClientRoleType.ClientRoleBroadcaster,
         autoSubscribeAudio: false,
         autoSubscribeVideo: false,
-        publishMicrophoneTrack: false,
+        publishMicrophoneTrack: true,//false
         publishCameraTrack: false,
         publishSecondaryCameraTrack: true,
       },
