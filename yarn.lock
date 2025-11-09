@@ -8231,6 +8231,11 @@ react-native-background-actions@^4.0.1:
   dependencies:
     eventemitter3 "^4.0.7"
 
+react-native-background-service@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/react-native-background-service/-/react-native-background-service-1.0.1.tgz"
+  integrity sha512-bkkHrsfjm65r5LUJdx3I989krz53mo9pneCn0+PBkGwOsZyBAG2Ehk6Y56326dJgWaW0Q/7HFpRQViPGuzkAwA==
+
 react-native-bugsee@^5.5.3:
   version "5.5.4"
   resolved "https://registry.npmjs.org/react-native-bugsee/-/react-native-bugsee-5.5.4.tgz"

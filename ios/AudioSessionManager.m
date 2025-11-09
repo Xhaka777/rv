@@ -3,7 +3,7 @@
 
 @interface RCT_EXTERN_MODULE(AudioSessionManager, RCTEventEmitter)
 
-// Recording methods
+//  ENHANCED: Recording methods with improved interruption handling
 RCT_EXTERN_METHOD(startRecording:(NSString *)fileName
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
@@ -17,7 +17,7 @@ RCT_EXTERN_METHOD(pauseRecording:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(resumeRecording:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-// Playback methods
+//  ENHANCED: Playback methods
 RCT_EXTERN_METHOD(startPlayback:(NSString *)filePath
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
@@ -25,7 +25,28 @@ RCT_EXTERN_METHOD(startPlayback:(NSString *)filePath
 RCT_EXTERN_METHOD(stopPlayback:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-// Utility methods
+//  ENHANCED: Audio streaming methods with interruption awareness
+RCT_EXTERN_METHOD(startContinuousAudioStreaming:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(stopContinuousAudioStreaming:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+//  ENHANCED: Speech Recognition methods with interruption handling
+RCT_EXTERN_METHOD(startSpeechRecognition:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(stopSpeechRecognition:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+//  NEW: Enhanced Siri interruption handling methods (from MicrophoneManager logic)
+RCT_EXTERN_METHOD(pauseRecordingForSiri:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(resumeRecordingAfterSiri:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+//  ENHANCED: Utility methods with enhanced state reporting
 RCT_EXTERN_METHOD(getCurrentAudioSessionState:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
@@ -35,23 +56,9 @@ RCT_EXTERN_METHOD(requestMicPermission:(RCTPromiseResolveBlock)resolve
 RCT_EXTERN_METHOD(getRecordingsList:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
-// Speech Recognition
-RCT_EXTERN_METHOD(startSpeechRecognition:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(stopSpeechRecognition:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-
-// streaming methods...
-RCT_EXTERN_METHOD(startContinuousAudioStreaming:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(stopContinuousAudioStreaming:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-RCT_EXTERN_METHOD(pauseRecordingForSiri:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(resumeRecordingAfterSiri:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;
+}
 
 @end

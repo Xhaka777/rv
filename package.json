@@ -67,6 +67,7 @@
     "react-native-audio-recorder-player": "^3.6.11",
     "react-native-audio-session": "^0.0.6",
     "react-native-background-actions": "^4.0.1",
+    "react-native-background-service": "^1.0.1",
     "react-native-bugsee": "^5.5.3",
     "react-native-circular-progress-indicator": "^4.4.2",
     "react-native-contacts": "^8.0.5",
