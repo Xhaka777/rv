@@ -15,43 +15,44 @@ class VideoMerger: NSObject {
     _ frontCamPath: String,
     backCamPath: String,
     outputPath: String,
+    timestamp: String,
+    incidentId: String,
     resolver resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    
     // Validate input paths
     guard FileManager.default.fileExists(atPath: frontCamPath) else {
       reject("FILE_NOT_FOUND", "Front camera video not found at: \(frontCamPath)", nil)
       return
     }
-    
+
     guard FileManager.default.fileExists(atPath: backCamPath) else {
       reject("FILE_NOT_FOUND", "Back camera video not found at: \(backCamPath)", nil)
       return
     }
-    
+
     print("🎬 Starting video concatenation with black screen transition and timestamp overlay...")
     print("📹 Video 1 (front): \(frontCamPath)")
     print("📹 Video 2 (back): \(backCamPath)")
     print("💾 Output: \(outputPath)")
-    
-    // Create URLs
+    print("⏰ Incident timestamp: \(timestamp)")
+
     let frontURL = URL(fileURLWithPath: frontCamPath)
     let backURL = URL(fileURLWithPath: backCamPath)
     let outputURL = URL(fileURLWithPath: outputPath)
-    
+
     // Delete output file if it exists
     try? FileManager.default.removeItem(at: outputURL)
-    
-    // Perform concatenation on background thread
+
     DispatchQueue.global(qos: .userInitiated).async {
       do {
         try self.concatenateVideosWithBlackScreenTransition(
           video1URL: frontURL,
           video2URL: backURL,
-          outputURL: outputURL
+          outputURL: outputURL,
+          incidentTimestamp: timestamp
         )
-        
+
         DispatchQueue.main.async {
           print("✅ Video concatenation with black screen transition completed successfully")
           resolve([
@@ -120,7 +121,8 @@ class VideoMerger: NSObject {
   private func concatenateVideosWithBlackScreenTransition(
     video1URL: URL,
     video2URL: URL,
-    outputURL: URL
+    outputURL: URL,
+    incidentTimestamp: String
   ) throws {
     
     // Load assets
@@ -233,7 +235,8 @@ class VideoMerger: NSObject {
       transform: videoTransform,
       duration: totalDuration,
       video1Duration: duration1,
-      blackScreenDuration: blackScreenDuration
+      blackScreenDuration: blackScreenDuration,
+      incidentTimestamp: incidentTimestamp
     )
     
     // Export the composition
@@ -285,8 +288,10 @@ class VideoMerger: NSObject {
     transform: CGAffineTransform,
     duration: CMTime,
     video1Duration: CMTime,
-    blackScreenDuration: CMTime
+    blackScreenDuration: CMTime,
+    incidentTimestamp: String
   ) -> AVMutableVideoComposition {
+
     
     let videoComposition = AVMutableVideoComposition()
     videoComposition.renderSize = renderSize
@@ -315,7 +320,11 @@ class VideoMerger: NSObject {
     videoComposition.instructions = [instruction]
     
     // Create layers for overlay (timestamp + black screen with logo)
-    let overlayLayer = createTimestampOverlayLayer(renderSize: renderSize)
+    let overlayLayer = createTimestampOverlayLayer(
+      renderSize: renderSize,
+      incidentTimestamp: incidentTimestamp,
+      duration: duration
+    ) 
     let blackScreenLayer = createBlackScreenWithLogoLayer(
       renderSize: renderSize,
       startTime: blackScreenStartTime,
@@ -445,120 +454,165 @@ class VideoMerger: NSObject {
   
   // MARK: - UPDATED: Timestamp Overlay with ROVE Premium Logo
   
-private func createTimestampOverlayLayer(renderSize: CGSize) -> CALayer {
-  let containerLayer = CALayer()
-  containerLayer.frame = CGRect(origin: .zero, size: renderSize)
-  
-  // Create current timestamp
-  let currentTimestamp = getCurrentTimestamp()
-  
-  // Logo dimensions (35x35 as requested)
-  let logoSize: CGFloat = 55
-  let logoSpacing: CGFloat = 24 // Space between text and logo
-  
-  // Calculate text dimensions
-  let timestampHeight: CGFloat = 20
-  let roveHeight: CGFloat = 18
-  let textSpacing: CGFloat = 4
-  let textHeight = timestampHeight + textSpacing + roveHeight
-  
-  // Calculate total dimensions including logo (logo now on RIGHT of text)
-  let textWidth: CGFloat = 160 // Width for text content (increased for full timestamp)
-  let totalWidth = textWidth + logoSpacing + logoSize
-  let totalHeight = max(logoSize, textHeight) // Use the larger of logo or text height
-  let padding: CGFloat = 12
-  
-  // Position in top-right corner
-  let containerX = renderSize.width - totalWidth - padding
-  let containerY = renderSize.height - totalHeight - padding
-  
-  // Background layer is commented out (no background, only shadows)
-  // let backgroundLayer = CALayer()
-  // backgroundLayer.backgroundColor = UIColor.black.withAlphaComponent(0.7).cgColor
-  // backgroundLayer.cornerRadius = 8
-  // backgroundLayer.frame = CGRect(
-  //   x: containerX - 8,
-  //   y: containerY - 8,
-  //   width: totalWidth + 16,
-  //   height: totalHeight + 16
-  // )
-  
-  // Create timestamp text layer (positioned on the LEFT)
-  let timestampTextLayer = CATextLayer()
-  timestampTextLayer.string = currentTimestamp
-  timestampTextLayer.fontSize = 16
-  timestampTextLayer.foregroundColor = UIColor.white.cgColor
-  timestampTextLayer.backgroundColor = UIColor.clear.cgColor
-  timestampTextLayer.alignmentMode = .left
-  timestampTextLayer.font = CTFontCreateWithName("Helvetica-Bold" as CFString, 16, nil)
-  timestampTextLayer.contentsScale = UIScreen.main.scale
-  timestampTextLayer.shadowColor = UIColor.black.cgColor
-  timestampTextLayer.shadowOffset = CGSize(width: 2, height: 2)
-  timestampTextLayer.shadowOpacity = 0.8
-  timestampTextLayer.shadowRadius = 3
-  timestampTextLayer.frame = CGRect(
-    x: containerX,
-    y: containerY + totalHeight - timestampHeight,
-    width: textWidth,
-    height: timestampHeight
-  )
-  
-  // Create "ROVE APP" text layer (positioned on the LEFT)
-  let roveTextLayer = CATextLayer()
-  roveTextLayer.string = "ROVE APP"
-  roveTextLayer.fontSize = 14
-  roveTextLayer.foregroundColor = UIColor.white.cgColor
-  roveTextLayer.backgroundColor = UIColor.clear.cgColor
-  roveTextLayer.alignmentMode = .right
-  roveTextLayer.font = CTFontCreateWithName("Helvetica-Bold" as CFString, 14, nil)
-  roveTextLayer.contentsScale = UIScreen.main.scale
-  roveTextLayer.shadowColor = UIColor.black.cgColor
-  roveTextLayer.shadowOffset = CGSize(width: 2, height: 2)
-  roveTextLayer.shadowOpacity = 0.8
-  roveTextLayer.shadowRadius = 3
-  roveTextLayer.frame = CGRect(
-    x: containerX,
-    y: containerY,
-    width: textWidth,
-    height: roveHeight
-  )
-  
-  // Create ROVE premium logo layer (positioned on the RIGHT of text)
-  let logoLayer = CALayer()
-  let logoX = containerX + textWidth + logoSpacing
-  let logoY = containerY + (totalHeight - logoSize) / 2 // Center vertically
-  
-  logoLayer.frame = CGRect(
-    x: logoX,
-    y: logoY,
-    width: logoSize,
-    height: logoSize
-  )
-  
-  // Load the rove_premium.png image from the bundle
-  if let logoImage = UIImage(named: "rove_premium") {
-    logoLayer.contents = logoImage.cgImage
-    logoLayer.contentsGravity = .resizeAspect
-  } else {
-    // Fallback: Create a simple colored rectangle if image not found
-    print("⚠️ Warning: rove_premium.png image not found in bundle")
-    logoLayer.backgroundColor = UIColor.yellow.cgColor
-    logoLayer.cornerRadius = 4
-  }
-  logoLayer.shadowColor = UIColor.black.cgColor
-  logoLayer.shadowOffset = CGSize(width: 2, height: 2)
-  logoLayer.shadowOpacity = 0.8
-  logoLayer.shadowRadius = 3
+private func createTimestampOverlayLayer(
+    renderSize: CGSize,
+    incidentTimestamp: String,
+    duration: CMTime
+) -> CALayer {
+    let containerLayer = CALayer()
+    containerLayer.frame = CGRect(origin: .zero, size: renderSize)
 
-  // Add layers to container (no background layer)
-  // containerLayer.addSublayer(backgroundLayer)
-  containerLayer.addSublayer(timestampTextLayer)
-  containerLayer.addSublayer(roveTextLayer)
-  containerLayer.addSublayer(logoLayer)
-  
-  return containerLayer
+    // Parse incident timestamp
+    let isoFormatter = ISO8601DateFormatter()
+    isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+    let outputFormatter = DateFormatter()
+    outputFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    outputFormatter.timeZone = TimeZone.current
+
+    let startDate: Date
+    if let parsed = isoFormatter.date(from: incidentTimestamp) {
+        startDate = parsed
+    } else {
+        print("⚠️ Could not parse incidentTimestamp: \(incidentTimestamp), falling back to now()")
+        startDate = Date()
+    }
+
+    let videoDurationSeconds = max(duration.seconds, 0.1)
+    let totalSeconds = max(Int(ceil(videoDurationSeconds)), 1) // Use ceil to include the last partial second
+
+    // Layout constants
+    let logoSize: CGFloat = 55
+    let logoSpacing: CGFloat = 24
+    let timestampHeight: CGFloat = 20
+    let roveHeight: CGFloat = 18
+    let textSpacing: CGFloat = 4
+    let textHeight = timestampHeight + textSpacing + roveHeight
+    let textWidth: CGFloat = 160
+    let totalWidth = textWidth + logoSpacing + logoSize
+    let totalHeight = max(logoSize, textHeight)
+    let padding: CGFloat = 12
+
+    let containerX = renderSize.width - totalWidth - padding
+    let containerY = renderSize.height - totalHeight - padding
+
+    // Create STATIC "ROVE APP" text layer (never changes)
+    let roveTextLayer = CATextLayer()
+    roveTextLayer.string = "ROVE APP"
+    roveTextLayer.fontSize = 14
+    roveTextLayer.foregroundColor = UIColor.white.cgColor
+    roveTextLayer.backgroundColor = UIColor.clear.cgColor
+    roveTextLayer.alignmentMode = .right
+    roveTextLayer.font = CTFontCreateWithName("Helvetica-Bold" as CFString, 14, nil)
+    roveTextLayer.contentsScale = UIScreen.main.scale
+    roveTextLayer.shadowColor = UIColor.black.cgColor
+    roveTextLayer.shadowOffset = CGSize(width: 2, height: 2)
+    roveTextLayer.shadowOpacity = 0.8
+    roveTextLayer.shadowRadius = 3
+    roveTextLayer.frame = CGRect(
+        x: containerX,
+        y: containerY,
+        width: textWidth,
+        height: roveHeight
+    )
+
+    // Create STATIC logo layer (never changes)
+    let logoLayer = CALayer()
+    let logoX = containerX + textWidth + logoSpacing
+    let logoY = containerY + (totalHeight - logoSize) / 2
+
+    logoLayer.frame = CGRect(
+        x: logoX,
+        y: logoY,
+        width: logoSize,
+        height: logoSize
+    )
+
+    if let logoImage = UIImage(named: "rove_premium") {
+        logoLayer.contents = logoImage.cgImage
+        logoLayer.contentsGravity = .resizeAspect
+    } else {
+        print("⚠️ Warning: rove_premium.png image not found in bundle")
+        logoLayer.backgroundColor = UIColor.yellow.cgColor
+        logoLayer.cornerRadius = 4
+    }
+    logoLayer.shadowColor = UIColor.black.cgColor
+    logoLayer.shadowOffset = CGSize(width: 2, height: 2)
+    logoLayer.shadowOpacity = 0.8
+    logoLayer.shadowRadius = 3
+
+    // Create DYNAMIC timestamp layers - one for each second
+    print("📝 Creating \(totalSeconds) timestamp layers for \(videoDurationSeconds) second video")
+    
+    for i in 0..<totalSeconds {
+        let timestampLayer = CATextLayer()
+        
+        // Calculate the timestamp for this specific second
+        let currentTime = startDate.addingTimeInterval(Double(i))
+        let timeString = outputFormatter.string(from: currentTime)
+        
+        timestampLayer.string = timeString
+        timestampLayer.fontSize = 16
+        timestampLayer.foregroundColor = UIColor.white.cgColor
+        timestampLayer.backgroundColor = UIColor.clear.cgColor
+        timestampLayer.alignmentMode = .left
+        timestampLayer.font = CTFontCreateWithName("Helvetica-Bold" as CFString, 16, nil)
+        timestampLayer.contentsScale = UIScreen.main.scale
+        timestampLayer.shadowColor = UIColor.black.cgColor
+        timestampLayer.shadowOffset = CGSize(width: 2, height: 2)
+        timestampLayer.shadowOpacity = 0.8
+        timestampLayer.shadowRadius = 3
+        timestampLayer.frame = CGRect(
+            x: containerX,
+            y: containerY + totalHeight - timestampHeight,
+            width: textWidth,
+            height: timestampHeight
+        )
+        
+        // Start hidden
+        timestampLayer.opacity = 0.0
+        
+        // Calculate timing for this layer
+        let layerStartTime = Double(i)
+        let layerEndTime = min(Double(i + 1), videoDurationSeconds) // Don't exceed video duration
+        
+        print("🕐 Layer \(i): '\(timeString)' visible from \(layerStartTime)s to \(layerEndTime)s")
+        
+        // Create show animation
+        let showAnimation = CABasicAnimation(keyPath: "opacity")
+        showAnimation.fromValue = 0.0
+        showAnimation.toValue = 1.0
+        showAnimation.duration = 0.1 // Quick fade in
+        showAnimation.beginTime = AVCoreAnimationBeginTimeAtZero + layerStartTime
+        showAnimation.fillMode = .forwards
+        showAnimation.isRemovedOnCompletion = false
+        
+        // Create hide animation (except for the last layer)
+        if i < totalSeconds - 1 {
+            let hideAnimation = CABasicAnimation(keyPath: "opacity")
+            hideAnimation.fromValue = 1.0
+            hideAnimation.toValue = 0.0
+            hideAnimation.duration = 0.1 // Quick fade out
+            hideAnimation.beginTime = AVCoreAnimationBeginTimeAtZero + layerEndTime - 0.1
+            hideAnimation.fillMode = .forwards
+            hideAnimation.isRemovedOnCompletion = false
+            
+            timestampLayer.add(hideAnimation, forKey: "hide_\(i)")
+        }
+        
+        timestampLayer.add(showAnimation, forKey: "show_\(i)")
+        containerLayer.addSublayer(timestampLayer)
+    }
+
+    // Add static elements to container (these never change)
+    containerLayer.addSublayer(roveTextLayer)
+    containerLayer.addSublayer(logoLayer)
+
+    print("✅ Timestamp overlay created with \(totalSeconds) dynamic timestamp layers + static ROVE branding")
+    
+    return containerLayer
 }
-  
+
   private func getCurrentTimestamp() -> String {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"

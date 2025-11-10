@@ -21,7 +21,7 @@ export interface TimestampOverlayOptions {
 }
 
 export class VideoMergerService {
-  
+
   /**
    * Check if video merger is available (iOS only)
    */
@@ -41,16 +41,16 @@ export class VideoMergerService {
     incidentId: string,
     incidentData: any
   ): Promise<boolean> {
-    
+
     const RNFS = require('react-native-fs');
     const { CameraRoll } = require('@react-native-camera-roll/camera-roll');
-    
+
     try {
       console.log('🎬 Starting merge and save for incident:', incidentId);
 
       const files = await RNFS.readDir(RNFS.DocumentDirectoryPath);
-      const videoFiles = files.filter(file => 
-        file.name.includes(incidentId) && 
+      const videoFiles = files.filter(file =>
+        file.name.includes(incidentId) &&
         file.name.includes('VIDEO') &&
         file.name.endsWith('.mp4')
       );
@@ -62,7 +62,7 @@ export class VideoMergerService {
       // If only one video, just add timestamp
       if (videoFiles.length === 1) {
         const timestampPath = `${RNFS.DocumentDirectoryPath}/timestamp_${incidentId}_${Date.now()}.mp4`;
-        
+
         await this.addTimestampOverlay(
           videoFiles[0].path,
           timestampPath,
@@ -71,7 +71,7 @@ export class VideoMergerService {
         );
 
         await CameraRoll.save(timestampPath, { type: 'video' });
-        await RNFS.unlink(timestampPath).catch(() => {});
+        await RNFS.unlink(timestampPath).catch(() => { });
         return true;
       }
 
@@ -81,7 +81,7 @@ export class VideoMergerService {
       const backCamPath = sortedFiles[0].path;
 
       const mergedPath = `${RNFS.DocumentDirectoryPath}/merged_final_${incidentId}_${Date.now()}.mp4`;
-      
+
       // This method now includes timestamp overlay in the merge process
       const result = await this.mergeVideosWithBlackScreenTransition(
         frontCamPath,
@@ -99,9 +99,9 @@ export class VideoMergerService {
 
       // Save the final merged video (only once!)
       await CameraRoll.save(mergedPath, { type: 'video' });
-      
+
       // Cleanup
-      await RNFS.unlink(mergedPath).catch(() => {});
+      await RNFS.unlink(mergedPath).catch(() => { });
 
       return true;
 
@@ -127,7 +127,7 @@ export class VideoMergerService {
     outputPath: string,
     overlayOptions: TimestampOverlayOptions
   ): Promise<MergeResult> {
-    
+
     if (!this.isAvailable()) {
       throw new Error('VideoMerger is only available on iOS');
     }
@@ -143,7 +143,9 @@ export class VideoMergerService {
       const result = await VideoMerger.mergeVideos(
         frontCamPath,
         backCamPath,
-        outputPath
+        outputPath,
+        overlayOptions.timestamp,   // <-- real incident time (ISO)
+        overlayOptions.incidentId   // <-- if you want to use it later
       );
 
       console.log('✅ Video merge with black screen transition completed:', result);
@@ -170,7 +172,7 @@ export class VideoMergerService {
     timestamp: string,
     incidentId: string
   ): Promise<MergeResult> {
-    
+
     if (!this.isAvailable()) {
       throw new Error('VideoMerger is only available on iOS');
     }
@@ -211,13 +213,13 @@ export class VideoMergerService {
     backCamPath: string,
     outputPath?: string
   ): Promise<MergeResult> {
-    
+
     if (!this.isAvailable()) {
       throw new Error('VideoMerger is only available on iOS');
     }
 
     // Generate default output path if not provided
-    const finalOutputPath = outputPath || 
+    const finalOutputPath = outputPath ||
       `${frontCamPath.substring(0, frontCamPath.lastIndexOf('/'))}/merged_${Date.now()}.mp4`;
 
     console.log('🎬 Starting video merge with black screen transition...');
@@ -229,7 +231,9 @@ export class VideoMergerService {
       const result = await VideoMerger.mergeVideos(
         frontCamPath,
         backCamPath,
-        finalOutputPath
+        finalOutputPath,
+        new Date().toISOString(),//
+        `incident_${Date.now()}`
       );
 
       console.log('✅ Video merge with black screen transition completed:', result);
@@ -248,7 +252,7 @@ export class VideoMergerService {
    * @returns Promise<VideoInfo>
    */
   static async getVideoInfo(videoPath: string): Promise<VideoInfo> {
-    
+
     if (!this.isAvailable()) {
       throw new Error('VideoMerger is only available on iOS');
     }
@@ -276,9 +280,9 @@ export class VideoMergerService {
     incidentId: string,
     files: any[]
   ): { frontCam: string | null; backCam: string | null } {
-    
-    const videoFiles = files.filter(file => 
-      file.name.includes(`${incidentId}`) && 
+
+    const videoFiles = files.filter(file =>
+      file.name.includes(`${incidentId}`) &&
       file.name.includes('VIDEO') &&
       file.name.endsWith('.mp4')
     );
@@ -344,7 +348,7 @@ export class VideoMergerService {
     try {
       const RNFS = require('react-native-fs');
       const exists = await RNFS.exists(videoPath);
-      
+
       if (!exists) {
         console.error('❌ Video file does not exist:', videoPath);
         return false;

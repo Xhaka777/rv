@@ -5,6 +5,8 @@
 RCT_EXTERN_METHOD(mergeVideos:(NSString *)frontCamPath
                   backCamPath:(NSString *)backCamPath
                   outputPath:(NSString *)outputPath
+                  timestamp:(NSString *)timestamp
+                  incidentId:(NSString *)incidentId
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
