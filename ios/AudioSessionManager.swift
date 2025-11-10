@@ -238,12 +238,31 @@ class AudioSessionManager: RCTEventEmitter {
         }
     }
     
-    private func handleInterruptionEnded(userInfo: [AnyHashable: Any]) {
-        // Other app (like Siri) finished, we can resume
-        print("🟢 [AUDIO_SESSION] INTERRUPTION ENDED - Checking if we can resume")
-        sendDebugLog("🟢 INTERRUPTION ENDED - Checking resume options")
-        
-        isSuspended = false  // Clear suspended flag
+  private func handleInterruptionEnded(userInfo: [AnyHashable: Any]) {
+      print("🟢 [AUDIO_SESSION] INTERRUPTION ENDED - Checking if we can resume")
+      sendDebugLog("🟢 INTERRUPTION ENDED - Checking resume options")
+
+      isSuspended = false
+
+      // ✅ ADD THIS SNIPPET HERE
+      if UIApplication.shared.applicationState != .active {
+          print("📞 [AUDIO_SESSION] Interruption ended while in background — likely a call")
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+              do {
+                  try self.audioSession.setCategory(.playAndRecord,
+                                                   mode: .default,
+                                                   options: [.allowBluetooth, .defaultToSpeaker, .mixWithOthers])
+                  try self.audioSession.setActive(true, options: [])
+                  try? self.audioEngine.start()
+                  print("✅ [AUDIO_SESSION] Mic resumed successfully in background after call")
+                  self.sendDebugLog("✅ Mic resumed successfully in background after call")
+              } catch {
+                  print("❌ [AUDIO_SESSION] Failed to resume mic in background: \(error)")
+                  self.sendDebugLog("❌ Failed to resume mic in background: \(error.localizedDescription)")
+              }
+          }
+          return
+      }
         
         if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
@@ -437,7 +456,7 @@ class AudioSessionManager: RCTEventEmitter {
     }
     
     private func restartServicesAfterSiri() {
-        print("🔄 [AUDIO_SESSION] Restarting services after Siri")
+        print(" [AUDIO_SESSION] Restarting services after Siri")
         sendDebugLog("🔄 Restarting services after Siri interruption")
         
         // Stop all services
