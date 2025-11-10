@@ -46,9 +46,8 @@ export class VideoMergerService {
     const { CameraRoll } = require('@react-native-camera-roll/camera-roll');
     
     try {
-      console.log('🎬 Starting merge and save with black screen transition for incident:', incidentId);
+      console.log('🎬 Starting merge and save for incident:', incidentId);
 
-      // 1. Find video files
       const files = await RNFS.readDir(RNFS.DocumentDirectoryPath);
       const videoFiles = files.filter(file => 
         file.name.includes(incidentId) && 
@@ -56,81 +55,58 @@ export class VideoMergerService {
         file.name.endsWith('.mp4')
       );
 
-      console.log('📹 Found video files:', videoFiles.length);
-
       if (videoFiles.length === 0) {
-        throw new Error('No video files found for this incident');
+        throw new Error('No video files found');
       }
 
-      // 2. If only one video, add timestamp overlay and save
+      // If only one video, just add timestamp
       if (videoFiles.length === 1) {
-        console.log('📹 Only one video found, adding timestamp overlay...');
-        const videoPath = videoFiles[0].path;
+        const timestampPath = `${RNFS.DocumentDirectoryPath}/timestamp_${incidentId}_${Date.now()}.mp4`;
         
-        // Create output path for overlay
-        const timestampOverlayPath = `${RNFS.DocumentDirectoryPath}/overlay_${incidentId}_${Date.now()}.mp4`;
-        
-        // Add timestamp overlay using native iOS method
         await this.addTimestampOverlay(
-          videoPath,
-          timestampOverlayPath,
-          incidentData.dateTime || incidentData.createdAt || new Date().toISOString(),
+          videoFiles[0].path,
+          timestampPath,
+          incidentData.dateTime,
           incidentData.id
         );
 
-        // Save to camera roll
-        await CameraRoll.save(timestampOverlayPath, { type: 'video' });
-        
-        // Cleanup temporary file
-        await RNFS.unlink(timestampOverlayPath).catch(() => {});
-
+        await CameraRoll.save(timestampPath, { type: 'video' });
+        await RNFS.unlink(timestampPath).catch(() => {});
         return true;
       }
 
-      // 3. Multiple videos - merge them with black screen transition and timestamp overlay
-      console.log('📹 Multiple videos found, merging with black screen transition...');
-      
-      // Sort by size - larger file is usually back camera
+      // Multiple videos - merge with black screen transition
       const sortedFiles = videoFiles.sort((a, b) => b.size - a.size);
-      const backCamPath = sortedFiles[0].path; // Larger file = back camera
-      const frontCamPath = sortedFiles[1].path; // Smaller file = front camera
+      const frontCamPath = sortedFiles[1].path;
+      const backCamPath = sortedFiles[0].path;
 
-      console.log('📹 Front cam (selfie - plays first):', frontCamPath);
-      console.log('📹 Back cam (main - plays after transition):', backCamPath);
-
-      // Create output path for merged video with black screen transition
-      const mergedWithTransitionPath = `${RNFS.DocumentDirectoryPath}/merged_transition_${incidentId}_${Date.now()}.mp4`;
+      const mergedPath = `${RNFS.DocumentDirectoryPath}/merged_final_${incidentId}_${Date.now()}.mp4`;
       
-      // Merge videos with black screen transition (this now includes the 2-second transition)
-      const mergeResult = await this.mergeVideosWithBlackScreenTransition(
-        frontCamPath, 
-        backCamPath, 
-        mergedWithTransitionPath,
+      // This method now includes timestamp overlay in the merge process
+      const result = await this.mergeVideosWithBlackScreenTransition(
+        frontCamPath,
+        backCamPath,
+        mergedPath,
         {
-          timestamp: incidentData.dateTime || incidentData.createdAt || new Date().toISOString(),
+          timestamp: incidentData.dateTime,
           incidentId: incidentData.id
         }
       );
 
-      if (!mergeResult.success) {
-        throw new Error('Video merge with black screen transition failed');
+      if (!result.success) {
+        throw new Error('Merge failed');
       }
 
-      console.log('✅ Videos merged with black screen transition successfully:', mergedWithTransitionPath);
+      // Save the final merged video (only once!)
+      await CameraRoll.save(mergedPath, { type: 'video' });
+      
+      // Cleanup
+      await RNFS.unlink(mergedPath).catch(() => {});
 
-      // 4. Save to camera roll
-      await CameraRoll.save(mergedWithTransitionPath, { type: 'video' });
-
-      console.log('✅ Saved to camera roll');
-
-      // 5. Cleanup temporary file
-      await RNFS.unlink(mergedWithTransitionPath).catch(() => {});
-
-      console.log('✅ Merge with black screen transition and save completed successfully');
       return true;
 
     } catch (error) {
-      console.error('❌ Merge with black screen transition and save failed:', error);
+      console.error('❌ Merge and save failed:', error);
       throw error;
     }
   }

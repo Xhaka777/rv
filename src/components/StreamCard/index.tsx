@@ -506,15 +506,12 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
         }
     };
 
-    // Updated handleDownloadPressWithMerge function in StreamCard component
     const handleDownloadPressWithMerge = async () => {
         try {
-            console.log('[Download] Starting download with black screen transition for incident:', incident.id);
+            console.log('[Download] Starting download for incident:', incident.id);
             setIsDownloading(true);
 
             const files = await RNFS.readDir(RNFS.DocumentDirectoryPath);
-
-            // Find all video files for this incident
             const mediaFiles = files.filter(file =>
                 file.name.includes(`-${incident.id}-VIDEO.mp4`)
             );
@@ -523,82 +520,63 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
 
             if (mediaFiles.length === 0) {
                 Alert.alert('Error', 'No local media found to download.');
-                setIsDownloading(false);
                 return;
             }
 
-            // CASE 1: Only ONE video file - add timestamp overlay and save
+            // Check if VideoMergerService is available (iOS only)
+            if (!VideoMergerService.isAvailable()) {
+                Alert.alert('Not Supported', 'Video merging is only available on iOS');
+                return;
+            }
+
+            // CASE 1: Single video file - add timestamp overlay only
             if (mediaFiles.length === 1) {
-                console.log('[Download] Single video - adding timestamp overlay');
+                console.log('[Download] Single video - adding timestamp overlay only');
+
+                const singleVideoPath = mediaFiles[0].path;
+                const timestampOutputPath = `${RNFS.DocumentDirectoryPath}/timestamp_single_${incident.id}_${Date.now()}.mp4`;
 
                 try {
-                    if (VideoMergerService.isAvailable()) {
-                        // Use new timestamp overlay method
-                        await VideoMergerService.mergeAndSaveToGallery(
-                            incident.id,
-                            {
-                                id: incident.id,
-                                dateTime: incident.dateTime,
-                                createdAt: incident.dateTime,
-                                streetName: incident.streetName || `Incident #${incident.id}`,
-                                triggerType: incident.triggerType || 'Unknown'
-                            }
-                        );
+                    // Add timestamp overlay to single video
+                    await VideoMergerService.addTimestampOverlay(
+                        singleVideoPath,
+                        timestampOutputPath,
+                        incident.dateTime,
+                        incident.id
+                    );
 
-                        Alert.alert(
-                            '✅ Success!',
-                            'ROVE security video with timestamp saved to your Photos!',
-                            [{ text: 'OK' }]
-                        );
-                    } else {
-                        // Fallback to original method for non-iOS
-                        await saveVideoToCameraRoll(mediaFiles[0].path);
-                    }
-                } catch (timestampError) {
-                    console.error('[Download] Timestamp overlay failed:', timestampError);
-                    // Fallback to original save method
+                    // Save to camera roll
+                    await CameraRoll.save(timestampOutputPath, { type: 'video' });
+
+                    // Cleanup temporary file
+                    await RNFS.unlink(timestampOutputPath).catch(() => { });
+
                     Alert.alert(
-                        'Overlay Failed',
-                        'Could not add timestamp. Saving original video.',
+                        '✅ Success!',
+                        'ROVE security video with timestamp saved to your Photos!',
                         [{ text: 'OK' }]
                     );
-                    await saveVideoToCameraRoll(mediaFiles[0].path);
+                } catch (error) {
+                    console.error('[Download] Single video processing failed:', error);
+                    Alert.alert('Error', 'Failed to process video');
                 }
-
-                setIsDownloading(false);
                 return;
             }
 
-            // CASE 2: TWO video files - merge with black screen transition and timestamp overlay
-            if (mediaFiles.length === 2 && VideoMergerService.isAvailable()) {
+            // CASE 2: Multiple videos - merge with black screen transition and timestamp
+            if (mediaFiles.length >= 2) {
                 console.log('[Download] Multiple videos found - merging with black screen transition...');
 
                 try {
-                    // Get video durations for timeline logging
+                    // Sort by size - larger file is usually back camera
                     const sortedFiles = mediaFiles.sort((a, b) => b.size - a.size);
-                    const frontCamPath = sortedFiles[1].path; // Smaller file (selfie)
                     const backCamPath = sortedFiles[0].path;  // Larger file (back cam)
+                    const frontCamPath = sortedFiles[1].path; // Smaller file (front cam)
 
-                    // Log the timeline (optional - for debugging)
-                    try {
-                        const frontCamInfo = await VideoMergerService.getVideoInfo(frontCamPath);
-                        const backCamInfo = await VideoMergerService.getVideoInfo(backCamPath);
+                    console.log('📹 Front cam (selfie - plays first):', frontCamPath);
+                    console.log('📹 Back cam (main - plays after transition):', backCamPath);
 
-                        console.log('📋 Video Merge Timeline:');
-                        console.log(`📹 Selfie cam duration: ${frontCamInfo.duration.toFixed(1)}s`);
-                        console.log(`📹 Back cam duration: ${backCamInfo.duration.toFixed(1)}s`);
-
-                        VideoMergerService.logMergeTimeline(frontCamInfo.duration, backCamInfo.duration);
-
-                        const expectedTotal = VideoMergerService.calculateTotalDurationWithTransition(
-                            frontCamInfo.duration,
-                            backCamInfo.duration
-                        );
-                        console.log(`📋 Expected total duration: ${expectedTotal.toFixed(1)}s`);
-                    } catch (infoError) {
-                        console.log('Could not get video info for timeline logging:', infoError);
-                    }
-
+                    // Use the single method that does everything: merge + transition + timestamp
                     const success = await VideoMergerService.mergeAndSaveToGallery(
                         incident.id,
                         {
@@ -613,57 +591,17 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
                     if (success) {
                         Alert.alert(
                             '✅ Success!',
-                            'Merged ROVE security video with black screen transition and timestamp saved to your Photos!\n\nTimeline: Selfie → 2s Transition → Back Cam',
+                            'Merged ROVE security video with black screen transition and timestamp saved to your Photos!',
                             [{ text: 'OK' }]
                         );
-                        setIsDownloading(false);
-                        return;
+                    } else {
+                        throw new Error('Merge operation returned false');
                     }
-                } catch (mergeError) {
-                    console.error('[Download] Merge with black screen transition failed:', mergeError);
-                    Alert.alert(
-                        'Merge Failed',
-                        'Could not merge videos with black screen transition. Saving first video only.',
-                        [{ text: 'OK' }]
-                    );
+                } catch (error) {
+                    console.error('[Download] Merge failed:', error);
+                    Alert.alert('Error', 'Failed to merge videos');
                 }
-            }
-
-            // FALLBACK: Save first video if merge not available or failed
-            console.log('[Download] Fallback - saving first video with basic overlay');
-
-            try {
-                // Try to add timestamp to single video as fallback
-                if (VideoMergerService.isAvailable()) {
-                    const singleVideoPath = mediaFiles[0].path;
-                    const timestampOutputPath = `${RNFS.DocumentDirectoryPath}/timestamp_${incident.id}_${Date.now()}.mp4`;
-
-                    await VideoMergerService.addTimestampOverlay(
-                        singleVideoPath,
-                        timestampOutputPath,
-                        incident.dateTime,
-                        incident.id
-                    );
-
-                    // Save to camera roll
-                    await CameraRoll.save(timestampOutputPath, { type: 'video' });
-
-                    // Cleanup
-                    await RNFS.unlink(timestampOutputPath).catch(() => { });
-
-                    Alert.alert(
-                        '✅ Success!',
-                        'ROVE security video with timestamp saved to your Photos!',
-                        [{ text: 'OK' }]
-                    );
-                } else {
-                    // Final fallback - original method
-                    await saveVideoToCameraRoll(mediaFiles[0].path);
-                }
-            } catch (fallbackError) {
-                console.error('[Download] All timestamp methods failed:', fallbackError);
-                // Last resort - save without any processing
-                await saveVideoToCameraRoll(mediaFiles[0].path);
+                return;
             }
 
         } catch (error) {
