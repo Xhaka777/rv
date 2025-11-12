@@ -167,7 +167,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const [seconds, setSeconds] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [hours, setHours] = useState(0);
-  const [mode, setMode] = useState<'AUDIO' | 'VIDEO'>('AUDIO');
+  const [mode, setMode] = useState<'AUDIO' | 'VIDEO'>(cameraMode);
   const [selectedMode, setSelectedMode] = useState('AUDIO');
   const [zoomLevel, setZoomLevel] = useState(0.5);
   const [isFlashlight, setIsFlashlight] = useState(false);
@@ -238,6 +238,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
   // Define gesture for horizontal swiping
   const switchMode = (newMode: 'AUDIO' | 'VIDEO') => {
+    console.log('LiveStream - switching to mode:', newMode);
     setMode(newMode);
 
     dispatch(HomeActions.setCameraMode(newMode));
@@ -818,12 +819,13 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
   // All your existing functions remain the same...
   const startRecordingAPI = async (token: any, incidentId: string) => {
-    console.log('📹 [DEBUG] startRecordingAPI - Starting');
-    console.log('📹 [DEBUG] isRespondersCam:', isRespondersCam);
-    console.log('📹 [DEBUG] Received incidentId:', incidentId); // ✅ Add this
+    console.log('📹 [startRecordingAPI] Initiating cloud recording...');
+    console.log('📹 [startRecordingAPI] isRespondersCam:', isRespondersCam);
+    console.log('📹 [startRecordingAPI] Incident ID:', incidentId);
+    console.log('📹 [startRecordingAPI] Channel name:', state.channelId);
 
     if (!isRespondersCam) {
-      console.log('💾 [DEBUG] LocalDownload mode - skipping cloud recording API');
+      console.log('💾 [startRecordingAPI] LocalDownload mode - skipping cloud recording');
       return;
     }
 
@@ -831,37 +833,42 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       channel_name: state.channelId,
       recorder_uid: '316000',
       token: token,
-      incident_id: incidentId, // ✅ Use parameter, not state variable
+      incident_id: incidentId,
     };
 
-    console.log('📹 [DEBUG] startRecordingAPI body:', JSON.stringify(body, null, 2));
+    console.log('📹 [startRecordingAPI] Recording request body:', JSON.stringify(body, null, 2));
 
     try {
       const res = await HomeAPIS.startRecording(body);
-      console.log('✅ [DEBUG] startRecordingAPI response:', JSON.stringify(res?.data, null, 2));
-      console.log('📹 [DEBUG] resourceId:', res?.data?.startRecordingResponse?.resourceId);
-      console.log('📹 [DEBUG] sid:', res?.data?.startRecordingResponse?.sid);
+      console.log('✅ [startRecordingAPI] Cloud recording started successfully');
+      console.log('📹 [startRecordingAPI] Full response:', JSON.stringify(res?.data, null, 2));
+      console.log('📹 [startRecordingAPI] Resource ID:', res?.data?.startRecordingResponse?.resourceId);
+      console.log('📹 [startRecordingAPI] SID:', res?.data?.startRecordingResponse?.sid);
 
       setResource_id(res?.data?.startRecordingResponse?.resourceId);
       setSid(res?.data?.startRecordingResponse?.sid);
+      console.log('📹 [startRecordingAPI] Recording identifiers saved to state');
     } catch (err) {
-      console.error('❌ [DEBUG] startRecordingAPI error:', err.response?.data || err);
+      console.error('❌ [startRecordingAPI] Cloud recording failed:', err.response?.data || err.message);
+      console.error('❌ [startRecordingAPI] Error status:', err.response?.status);
     }
   };
 
   const stopRecordingAPI = async () => {
-    console.log('🛑 [DEBUG] stopRecordingAPI - Starting');
-    console.log('🛑 [DEBUG] isRespondersCam:', isRespondersCam);
+    console.log('🛑 [stopRecordingAPI] Stopping cloud recording...');
+    console.log('🛑 [stopRecordingAPI] isRespondersCam:', isRespondersCam);
+    console.log('🛑 [stopRecordingAPI] Resource ID:', resource_id);
+    console.log('🛑 [stopRecordingAPI] SID:', sid);
+    console.log('🛑 [stopRecordingAPI] Incident ID:', incident_id);
 
     if (!isRespondersCam) {
-      console.log('💾 [DEBUG] LocalDownload mode - skipping cloud recording stop API');
+      console.log('💾 [stopRecordingAPI] LocalDownload mode - skipping cloud recording stop');
       return;
     }
 
     if (!resource_id || !sid) {
-      console.log('⚠️ [DEBUG] Recording not fully started yet (no resource_id/sid) - skipping stop API');
-      console.log('🛑 [DEBUG] resource_id:', resource_id);
-      console.log('🛑 [DEBUG] sid:', sid);
+      console.log('⚠️ [stopRecordingAPI] Missing recording identifiers - cannot stop recording');
+      console.log('⚠️ [stopRecordingAPI] This may indicate recording never fully started');
       return;
     }
 
@@ -874,42 +881,45 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       recording_type: mode.toLowerCase(),
     };
 
-    console.log('🛑 [DEBUG] stopRecordingAPI body:', JSON.stringify(body, null, 2));
+    console.log('🛑 [stopRecordingAPI] Stop recording body:', JSON.stringify(body, null, 2));
 
     try {
       const res = await HomeAPIS.stopRecording(body);
+      console.log('✅ [stopRecordingAPI] Cloud recording stopped successfully');
+      console.log('🛑 [stopRecordingAPI] Full response:', JSON.stringify(res?.data, null, 2));
 
-      console.log('✅ [DEBUG] stopRecordingAPI Full Response:', JSON.stringify(res?.data, null, 2));
-
-      // Check for Agora links
+      // Log recording links
       if (res?.data?.incident_updated) {
-        console.log('🎬 [DEBUG] Incident Updated Object:', JSON.stringify(res.data.incident_updated, null, 2));
-        console.log('🎬 [DEBUG] agora_video_link:', res.data.incident_updated.agora_video_link);
-        console.log('🎬 [DEBUG] agora_audio_link:', res.data.incident_updated.agora_audio_link);
-        console.log('🎬 [DEBUG] recording_type:', res.data.incident_updated.recording_type);
-        console.log('🎬 [DEBUG] live_link:', res.data.incident_updated.live_link);
+        console.log('🎬 [stopRecordingAPI] Recording links generated:');
+        console.log('🎬 [stopRecordingAPI] Video link:', res.data.incident_updated.agora_video_link);
+        console.log('🎬 [stopRecordingAPI] Audio link:', res.data.incident_updated.agora_audio_link);
+        console.log('🎬 [stopRecordingAPI] Recording type:', res.data.incident_updated.recording_type);
+        console.log('🎬 [stopRecordingAPI] Live link:', res.data.incident_updated.live_link);
       } else {
-        console.log('⚠️ [DEBUG] No incident_updated in response');
+        console.log('⚠️ [stopRecordingAPI] No incident_updated in response - links may not be available');
       }
 
+      console.log('🛑 [stopRecordingAPI] Clearing incident ID from state');
       setIncident_id('');
     } catch (err) {
-      console.error('❌ [DEBUG] stopRecordingAPI error:', err.response?.data || err);
+      console.error('❌ [stopRecordingAPI] Stop recording failed:', err.response?.data || err.message);
+      console.error('❌ [stopRecordingAPI] Error status:', err.response?.status);
     }
   };
 
   const postMessage = async (token: any, incidentId: any) => {
-    console.log('💬 [DEBUG] postMessage - Starting');
-    console.log('💬 [DEBUG] token:', token?.substring(0, 20) + '...');
-    console.log('💬 [DEBUG] incidentId:', incidentId);
-    console.log('💬 [DEBUG] isRespondersCam:', isRespondersCam);
-    console.log('💬 [DEBUG] isTestStream:', isTestStream);
-    console.log('💬 [DEBUG] mode:', mode);
+    console.log('💬 [postMessage] Sending stream message to responders...');
+    console.log('💬 [postMessage] Token available:', !!token);
+    console.log('💬 [postMessage] Incident ID:', incidentId);
+    console.log('💬 [postMessage] Mode:', mode);
+    console.log('💬 [postMessage] isRespondersCam:', isRespondersCam);
+    console.log('💬 [postMessage] isTestStream:', isTestStream);
+    console.log('💬 [postMessage] User location:', userCordinates);
 
     try {
       if (!isRespondersCam) {
         console.log('💾 [DEBUG] LocalDownload mode - skipping responder messages');
-        let array: any = [];
+        let array: any = []; // ✅ CHANGE: Start with empty array
 
         if (!isStreaming) {
           setSeconds(0); setMinutes(0); setHours(0);
@@ -921,20 +931,16 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         console.log('💬 [DEBUG] Calling joinChannel for LocalDownload');
         joinChannel(token, incidentId);
         toggleShape();
-        startRecordingAPI(token, incidentId); // ✅ FIX 1: Pass incidentId
-        setViewers(array);
+        startRecordingAPI(token, incidentId);
+        setViewers(array); // ✅ Will be empty initially
         return;
       }
 
       if (isTestStream && testStreamContact) {
         console.log('🧪 [DEBUG] Test stream mode for contact:', testStreamContact.name);
-        let array: any = [{
-          id: '0',
-          name: testStreamContact.name,
-          color: '#FFFFFF',
-        }];
+        let array: any = []; // ✅ CHANGE: Start with empty array, will populate via onUserJoined
 
-        setViewers(array);
+        setViewers(array); // ✅ Empty initially
 
         if (!isStreaming) {
           setSeconds(0); setMinutes(0); setHours(0);
@@ -946,11 +952,11 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         console.log('💬 [DEBUG] Calling joinChannel for test stream');
         joinChannel(token, incidentId);
         toggleShape();
-        startRecordingAPI(token, incidentId); // ✅ FIX 2: Pass incidentId
+        startRecordingAPI(token, incidentId);
         return;
       }
 
-      // Normal API call
+      // Normal API call to notify responders
       const messageBody = {
         stream_token: token,
         lat: userCordinates?.latitude,
@@ -959,14 +965,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         incident_id: incidentId,
       };
 
-      console.log('💬 [DEBUG] postMessage body:', JSON.stringify(messageBody, null, 2));
+      console.log('💬 [postMessage] Sending message to responders API');
+      console.log('💬 [postMessage] Message body:', JSON.stringify(messageBody, null, 2));
 
       const res = await HomeAPIS.postMsg(messageBody);
       console.log('✅ [DEBUG] postMessage response:', JSON.stringify(res?.data, null, 2));
 
-      startRecordingAPI(token, incidentId); // ✅ FIX 3: Pass incidentId (THIS IS THE ONE CAUSING YOUR ERROR)
+      startRecordingAPI(token, incidentId);
 
-      let array: any = [];
+      let array: any = []; // ✅ CHANGE: Start with empty array
       if (!isStreaming) {
         setSeconds(0); setMinutes(0); setHours(0);
       }
@@ -978,37 +985,41 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       joinChannel(token, incidentId);
       toggleShape();
 
-      res?.data?.results?.map((item: any, index: number) => {
-        array?.push({
-          id: index?.toString(),
-          name: item?.name,
-          color: '#FFFFFF',
-        });
-      });
+      // ✅ REMOVE THIS SECTION - don't populate viewers from API response
+      // res?.data?.results?.map((item: any, index: number) => {
+      //   array?.push({
+      //     id: index?.toString(),
+      //     name: item?.name,
+      //     color: '#FFFFFF',
+      //   });
+      // });
 
       console.log('💬 [DEBUG] Viewers array:', JSON.stringify(array, null, 2));
       setViewers(array);
     } catch (err) {
-      console.error('❌ [DEBUG] postMessage error:', err.response?.data || err);
+      console.error('❌ [postMessage] Message sending failed:', err.response?.data || err.message);
+      console.error('❌ [postMessage] Error status:', err.response?.status);
     }
   };
 
 
   const postIncident = async (token: any) => {
-    console.log('📝 [DEBUG] postIncident - Starting');
-    console.log('📝 [DEBUG] isRespondersCam:', isRespondersCam);
-    console.log('📝 [DEBUG] token:', token?.substring(0, 20) + '...');
+    console.log('📝 [postIncident] Creating incident...');
+    console.log('📝 [postIncident] isRespondersCam:', isRespondersCam);
+    console.log('📝 [postIncident] Token available:', !!token);
+    console.log('📝 [postIncident] User coordinates:', userCordinates);
 
     if (!isRespondersCam) {
-      console.log('💾 [DEBUG] LocalDownload mode - skipping cloud incident');
       const localIncidentId = `local_${Date.now()}`;
-      console.log('📝 [DEBUG] Generated local incident ID:', localIncidentId);
+      console.log('💾 [postIncident] LocalDownload mode - generating local incident ID:', localIncidentId);
       setIncident_id(localIncidentId);
+      console.log('💾 [postIncident] Calling postMessage with local incident ID');
       postMessage(token, localIncidentId);
       return;
     }
 
     const deviceToken = await getDeviceToken();
+    console.log('📱 [postIncident] Device token retrieved:', !!deviceToken);
 
     const body = {
       timestamp: new Date().toISOString(),
@@ -1018,25 +1029,28 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       device_token: deviceToken,
     };
 
-    console.log('body', body)
-
-    console.log('📝 [DEBUG] postIncident body:', JSON.stringify(body, null, 2));
+    console.log('📝 [postIncident] Incident body:', JSON.stringify(body, null, 2));
 
     try {
       const res = await HomeAPIS.postIncidents(body);
-      console.log('✅ [DEBUG] postIncident response:', JSON.stringify(res?.data, null, 2));
-      console.log('📝 [DEBUG] Incident ID:', res?.data?.id);
+      console.log('✅ [postIncident] Incident created successfully');
+      console.log('📝 [postIncident] Incident ID:', res?.data?.id);
+      console.log('📝 [postIncident] Response data:', JSON.stringify(res?.data, null, 2));
 
       setIncident_id(res?.data?.id);
-      console.log('📝 [DEBUG] Calling postMessage with incident ID:', res?.data?.id);
+      console.log('📝 [postIncident] Incident ID saved to state');
+      console.log('📝 [postIncident] Calling postMessage with incident ID:', res?.data?.id);
       postMessage(token, res?.data?.id);
     } catch (err) {
-      console.error('❌ [DEBUG] postIncident error:', err.response?.data || err);
+      console.error('❌ [postIncident] Incident creation failed:', err.response?.data || err.message);
+      console.error('❌ [postIncident] Error status:', err.response?.status);
     }
   };
 
   const AgoraToken = async () => {
-    console.log('🎟️ [DEBUG] AgoraToken - Starting');
+    console.log('🎟️ [AgoraToken] Starting token generation...');
+    console.log('🎟️ [AgoraToken] Channel ID:', state.channelId);
+    console.log('🎟️ [AgoraToken] UID:', state.uid);
 
     const body = {
       uid: '0',
@@ -1044,12 +1058,13 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       role: 'publisher',
     };
 
-    console.log('🎟️ [DEBUG] AgoraToken body:', JSON.stringify(body, null, 2));
+    console.log('🎟️ [AgoraToken] Request body:', JSON.stringify(body, null, 2));
 
     try {
       const res = await HomeAPIS.getAgoraToken(body);
-      console.log('✅ [DEBUG] AgoraToken response:', JSON.stringify(res?.data, null, 2));
-      console.log('🎟️ [DEBUG] Token received:', res?.data?.token?.substring(0, 20) + '...');
+      console.log('✅ [AgoraToken] API Response received');
+      console.log('✅ [AgoraToken] Token length:', res?.data?.token?.length);
+      console.log('✅ [AgoraToken] Token preview:', res?.data?.token?.substring(0, 30) + '...');
 
       setState({
         ...state,
@@ -1057,12 +1072,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         token2: res?.data?.token,
       });
 
-      console.log('🎟️ [DEBUG] Calling postIncident with token');
+      console.log('🎟️ [AgoraToken] State updated with token');
+      console.log('🎟️ [AgoraToken] Proceeding to postIncident with token');
       postIncident(res?.data?.token);
     } catch (err) {
-      console.error('❌ [DEBUG] AgoraToken error:', err.response?.data || err);
+      console.error('❌ [AgoraToken] Token generation failed:', err.response?.data || err.message);
+      console.error('❌ [AgoraToken] Error status:', err.response?.status);
     }
   };
+
 
   const initRtcEngine = async () => {
     const { appId } = state;
@@ -1079,9 +1097,32 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
     agoraEngine.registerEventHandler({
       onJoinChannelSuccess: () => setJoinChannelSuccess(true),
-      onUserJoined: uid => setRemoteUsers(prevUsers => [...prevUsers, uid]),
-      onUserOffline: uid =>
-        setRemoteUsers(prevUsers => prevUsers.filter(user => user !== uid)),
+      onUserJoined: uid => {
+        console.log('👁️ User joined Agora channel:', uid);
+        setRemoteUsers(prevUsers => [...prevUsers, uid]);
+
+        // Add to viewers list (you'll need to map UID to contact info)
+        setViewers(prevViewers => {
+          // Check if already exists to avoid duplicates
+          const exists = prevViewers.find(viewer => viewer.uid === uid);
+          if (!exists) {
+            return [...prevViewers, {
+              id: uid.toString(),
+              uid: uid,
+              name: `Viewer ${uid}`, // You'll want to map this to actual contact name
+              color: '#FFFFFF',
+            }];
+          }
+          return prevViewers;
+        });
+      },
+      onUserOffline: uid => {
+        console.log('👁️ User left Agora channel:', uid);
+        setRemoteUsers(prevUsers => prevUsers.filter(user => user !== uid));
+
+        // Remove from viewers list
+        setViewers(prevViewers => prevViewers.filter(viewer => viewer.uid !== uid));
+      },
     });
 
     await askMediaAccess([
@@ -1150,31 +1191,35 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const joinChannel = (agora_token: string, incidentId: any) => {
     const { channelId, token, uid } = state;
 
-    console.log('🔗 [DEBUG] joinChannel - Starting');
-    console.log('🔗 [DEBUG] channelId:', channelId);
-    console.log('🔗 [DEBUG] uid:', uid);
-    console.log('🔗 [DEBUG] agora_token:', agora_token?.substring(0, 20) + '...');
-    console.log('🔗 [DEBUG] incidentId:', incidentId);
+    console.log('🔗 [joinChannel] Attempting to join Agora channel...');
+    console.log('🔗 [joinChannel] Channel ID:', channelId);
+    console.log('🔗 [joinChannel] UID:', uid);
+    console.log('🔗 [joinChannel] Token preview:', agora_token?.substring(0, 30) + '...');
+    console.log('🔗 [joinChannel] Incident ID:', incidentId);
+    console.log('🔗 [joinChannel] Engine available:', !!engine);
 
     if (!channelId || uid < 0) {
-      console.error('❌ [DEBUG] Invalid channelId or uid');
+      console.error('❌ [joinChannel] Invalid parameters - channelId:', channelId, 'uid:', uid);
       return;
     }
 
-    console.log('🔗 [DEBUG] Calling engine?.joinChannel');
+    console.log('🔗 [joinChannel] Calling engine.joinChannel with broadcaster role');
     engine?.joinChannel(agora_token, channelId, uid, {
       clientRoleType: ClientRoleType.ClientRoleBroadcaster,
     });
 
+    console.log('✅ [joinChannel] Channel join request sent');
     setIsStreaming(true);
-    console.log('✅ [DEBUG] joinChannel - Stream started, isStreaming set to true');
+    console.log('🎬 [joinChannel] isStreaming state set to true');
 
-    if (startSecondCamera) {
-      console.log('🔗 [DEBUG] Starting second camera');
+    if (startSecondCamera && mode === 'VIDEO') {
+      console.log('📹 [joinChannel] Secondary camera available - starting dual camera setup');
       publishSecondCameraToStream(agora_token, incidentId);
+    } else {
+      console.log('📹 [joinChannel] Single camera mode or audio mode - skipping secondary camera');
     }
 
-    console.log('🔗 [DEBUG] Starting recording');
+    console.log('🎥 [joinChannel] Starting primary recording');
     startRecording(incidentId);
   };
 
@@ -1185,30 +1230,49 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   };
 
   const leaveChannel = async () => {
+    console.log('🚪 [leaveChannel] Leaving Agora channel...');
+    console.log('🚪 [leaveChannel] Current streaming state:', isStreaming);
+    console.log('🚪 [leaveChannel] Primary UID:', state.uid);
+    console.log('🚪 [leaveChannel] Secondary UID:', state.uid2);
+
     try {
       const { channelId, uid2, uid } = state;
       setIsStreaming(false);
       setIsFlashlight(false);
+      setViewers([]); // ✅ ADD: Clear viewers when leaving
       engine?.setCameraTorchOn(false);
+
+      console.log('🚪 [leaveChannel] Leaving primary channel');
       engine?.leaveChannelEx({ channelId, localUid: uid });
+
+      console.log('🚪 [leaveChannel] Leaving secondary channel');
       engine?.leaveChannelEx({ channelId, localUid: uid2 });
+
+      console.log('🔄 [leaveChannel] Calling test() to reset camera states');
       await test();
 
       // Small delay before restart
+      console.log('⏱️ [leaveChannel] Waiting 100ms before camera restart');
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      console.log('📹 [leaveChannel] Restarting camera preview');
       engine?.enableVideo();
       engine?.startPreview();
       setStartPreview(true);
+
+      console.log('📹 [leaveChannel] Re-enabling multi-camera setup');
       engine?.enableMultiCamera(true, { cameraDirection: 1 });
       engine?.startCameraCapture(VideoSourceType.VideoSourceCameraSecondary, {
         cameraDirection: 1,
       });
       engine?.startPreview(VideoSourceType.VideoSourceCameraSecondary);
       setStartSecondCamera(true);
+
+      console.log('✅ [leaveChannel] Channel leave process completed');
     } catch (error) {
-      console.error('Error in leaveChannel:', error);
+      console.error('❌ [leaveChannel] Error during channel leave:', error);
       // Fallback: just ensure states are correct
+      console.log('🔧 [leaveChannel] Applying fallback state reset');
       setIsStreaming(false);
       setStartPreview(false);
       setStartSecondCamera(false);
@@ -1227,36 +1291,48 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     engine?.switchCamera();
   };
 
-  const publishSecondCameraToStream = (
-    agora_token: string,
-    incidentId: any,
-  ) => {
+  const publishSecondCameraToStream = (agora_token: string, incidentId: any) => {
+    console.log('📹 [publishSecondCamera] Setting up secondary camera stream...');
+    console.log('📹 [publishSecondCamera] Mode:', mode);
+    console.log('📹 [publishSecondCamera] Incident ID:', incidentId);
 
     if (mode === 'AUDIO') {
-      console.log('Skiping second camera - in Audio mode');
+      console.log('🎵 [publishSecondCamera] Audio mode - skipping secondary camera');
       return;
     }
 
     const { channelId, token2, uid2 } = state;
+
+    console.log('📹 [publishSecondCamera] Channel ID:', channelId);
+    console.log('📹 [publishSecondCamera] Secondary UID:', uid2);
+
     if (!channelId || uid2 <= 0) {
-      console.error('channelId or uid2 is invalid');
+      console.error('❌ [publishSecondCamera] Invalid channel parameters');
       return;
     }
+
+    const joinOptions = {
+      clientRoleType: ClientRoleType.ClientRoleBroadcaster,
+      autoSubscribeAudio: false,
+      autoSubscribeVideo: false,
+      publishMicrophoneTrack: true,
+      publishCameraTrack: false,
+      publishSecondaryCameraTrack: true,
+    };
+
+    console.log('📹 [publishSecondCamera] Join options:', JSON.stringify(joinOptions, null, 2));
+    console.log('📹 [publishSecondCamera] Joining channel with secondary camera...');
 
     engine?.joinChannelEx(
       agora_token,
       { channelId, localUid: uid2 },
-      {
-        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
-        autoSubscribeAudio: false,
-        autoSubscribeVideo: false,
-        publishMicrophoneTrack: true,//false
-        publishCameraTrack: false,
-        publishSecondaryCameraTrack: true,
-      },
+      joinOptions
     );
+
     setPublishSecondCamera(true);
     setIsStreaming(true);
+    console.log('✅ [publishSecondCamera] Secondary camera stream initiated');
+    console.log('🎥 [publishSecondCamera] Starting secondary recording');
     startRecording2(incidentId);
   };
 
@@ -1403,10 +1479,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const startRecording = useCallback(
     (incidentId: any) => {
       let uid = Math.floor(10 + Math.random() * 90);
-      console.log('Running Start Recording 1', uid);
+      console.log('🎥 [startRecording] Starting primary recording...');
+      console.log('🎥 [startRecording] Generated UID:', uid);
+      console.log('🎥 [startRecording] Incident ID:', incidentId);
+      console.log('🎥 [startRecording] Mode:', mode);
+      console.log('🎥 [startRecording] Storage path:', state.storagePath);
 
       // Create file path
       const filePath = `${state.storagePath}/${uid}-${incidentId}-${mode}.mp4`;
+      console.log('📁 [startRecording] Recording file path:', filePath);
 
       // Store the path for later use
       setLocalRecordingPaths(prev => ({
@@ -1418,16 +1499,23 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         ? MediaRecorderStreamType.StreamTypeAudio
         : MediaRecorderStreamType.StreamTypeBoth;
 
-      recorder?.startRecording({
+      console.log('🎬 [startRecording] Stream type:', streamType === MediaRecorderStreamType.StreamTypeAudio ? 'AUDIO' : 'BOTH');
+
+      const recordingConfig = {
         storagePath: filePath,
         containerFormat: state.containerFormat,
-        // streamType: state.streamType,
         streamType: streamType,
         maxDurationMs: state.maxDurationMs,
         recorderInfoUpdateInterval: state.recorderInfoUpdateInterval,
-      });
+      };
 
+      console.log('🎥 [startRecording] Recording config:', JSON.stringify(recordingConfig, null, 2));
+      console.log('🎥 [startRecording] Recorder available:', !!recorder);
+
+      recorder?.startRecording(recordingConfig);
       setState(prev => ({ ...prev, startRecording: true }));
+
+      console.log('✅ [startRecording] Primary recording started');
     },
     [recorder, state, mode],
   );
@@ -1435,10 +1523,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const startRecording2 = useCallback(
     (incidentId: any) => {
       let uid = Math.floor(10 + Math.random() * 90);
-      console.log('Running Start Recording 2', uid);
+      console.log('🎥 [startRecording2] Starting secondary recording...');
+      console.log('🎥 [startRecording2] Generated UID:', uid);
+      console.log('🎥 [startRecording2] Incident ID:', incidentId);
+      console.log('🎥 [startRecording2] Mode:', mode);
+      console.log('🎥 [startRecording2] Storage path:', state.storagePath2);
 
       // Create file path
       const filePath = `${state.storagePath2}/${uid}-${incidentId}-${mode}.mp4`;
+      console.log('📁 [startRecording2] Recording file path:', filePath);
 
       // Store the path for later use
       setLocalRecordingPaths(prev => ({
@@ -1450,15 +1543,23 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         ? MediaRecorderStreamType.StreamTypeAudio
         : MediaRecorderStreamType.StreamTypeVideo;
 
-      recorder2?.startRecording({
+      console.log('🎬 [startRecording2] Stream type:', streamType2 === MediaRecorderStreamType.StreamTypeAudio ? 'AUDIO' : 'VIDEO');
+
+      const recordingConfig = {
         storagePath: filePath,
         containerFormat: state.containerFormat,
-        // streamType: state.streamType2,
         streamType: streamType2,
         maxDurationMs: state.maxDurationMs,
         recorderInfoUpdateInterval: state.recorderInfoUpdateInterval,
-      });
+      };
+
+      console.log('🎥 [startRecording2] Recording config:', JSON.stringify(recordingConfig, null, 2));
+      console.log('🎥 [startRecording2] Recorder2 available:', !!recorder2);
+
+      recorder2?.startRecording(recordingConfig);
       setState(prev => ({ ...prev, startRecording: true }));
+
+      console.log('✅ [startRecording2] Secondary recording started');
     },
     [recorder2, state, mode],
   );

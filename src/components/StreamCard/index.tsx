@@ -19,6 +19,7 @@ import Svg, { Rect } from 'react-native-svg';
 import Video from 'react-native-video';
 import { VideoProcessingOverlayService } from '../../utils/videoOverlay';
 import { VideoMergerService } from '../../services/videoMerger';
+import { ActivityIndicator } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -558,7 +559,7 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
                     );
                 } catch (error) {
                     console.error('[Download] Single video processing failed:', error);
-                    Alert.alert('Error', 'Failed to process video');
+                    // Alert.alert('Error', 'Failed to process video');
                 }
                 return;
             }
@@ -599,7 +600,7 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
                     }
                 } catch (error) {
                     console.error('[Download] Merge failed:', error);
-                    Alert.alert('Error', 'Failed to merge videos');
+                    // Alert.alert('Error', 'Failed to merge videos');
                 }
                 return;
             }
@@ -1321,9 +1322,14 @@ const StreamCardComponent: React.FC<StreamCardProps> = ({ incident, onDelete, on
                         >
                             <Text style={styles.closeButtonText}>x</Text>
                         </TouchableOpacity>
-
                     </View>
                 </Modal>
+            )}
+            {/* Download Loading Modal */}
+            {isDownloading && (
+                <View style={styles.downloadLoader}>
+                    <ActivityIndicator size="large" color="#FFFFFF" />
+                </View>
             )}
         </View>
     );
@@ -1744,5 +1750,17 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: Metrix.customFontSize(20),
         fontWeight: 'bold',
+    },
+    downloadLoader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: Metrix.HorizontalSize(16),
+        zIndex: 100,
     },
 });

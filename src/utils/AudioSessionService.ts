@@ -6,23 +6,23 @@ interface AudioSessionModule {
   stopRecording(): Promise<{ success: boolean; filePath: string }>;
   pauseRecording(): Promise<boolean>;
   resumeRecording(): Promise<boolean>;
-  
+
   // Playback methods
   startPlayback(filePath: string): Promise<{ success: boolean }>;
   stopPlayback(): Promise<{ success: boolean }>;
-  
+
   // Audio streaming methods
   startContinuousAudioStreaming(): Promise<{ success: boolean; message: string }>;
   stopContinuousAudioStreaming(): Promise<{ success: boolean; message: string }>;
-  
+
   // Speech recognition methods
   startSpeechRecognition(): Promise<{ success: boolean; isStreaming: boolean }>;
   stopSpeechRecognition(): Promise<{ success: boolean }>;
-  
+
   // 🔥 NEW: Manual Siri handling methods
   pauseRecordingForSiri(): Promise<{ success: boolean; message: string; pausedServices: string[] }>;
   resumeRecordingAfterSiri(): Promise<{ success: boolean; message: string }>;
-  
+
   // Utility methods
   getCurrentAudioSessionState(): Promise<{
     category: string;
@@ -143,7 +143,7 @@ export interface HeySiriDetectedEvent {
   timestamp: number;
 }
 
-export type AudioSessionEventType = 
+export type AudioSessionEventType =
   // Original events
   | 'AudioInterruptionBegan'
   | 'AudioInterruptionEnded'
@@ -174,7 +174,7 @@ export class AudioSessionService {
   private static instance: AudioSessionService;
   private listeners: Map<string, any[]> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AudioSessionService {
     if (!AudioSessionService.instance) {
@@ -379,13 +379,15 @@ export class AudioSessionService {
     eventType: 'HeySiriDetected',
     listener: (event: HeySiriDetectedEvent) => void
   ): void;
-  addListener(eventType: AudioSessionEventType, listener: (event: any) => void): void {
+  addListener(eventType: AudioSessionEventType, listener: (event: any) => void): any {
     const subscription = audioEmitter.addListener(eventType, listener);
-    
+
     if (!this.listeners.has(eventType)) {
       this.listeners.set(eventType, []);
     }
     this.listeners.get(eventType)?.push(subscription);
+
+    return subscription;
   }
 
   removeListener(eventType: AudioSessionEventType, listener?: (event: any) => void): void {
@@ -421,7 +423,7 @@ export class AudioSessionService {
       'secondary audio silenced',
       'built-in mic muted'
     ];
-    
+
     const message = debugLogMessage.toLowerCase();
     return siriKeywords.some(keyword => message.includes(keyword));
   }
@@ -433,7 +435,7 @@ export class AudioSessionService {
       'telephony',
       'cellular call'
     ];
-    
+
     const message = debugLogMessage.toLowerCase();
     return callKeywords.some(keyword => message.includes(keyword));
   }
@@ -456,7 +458,7 @@ export class AudioSessionService {
       'system_began': '📱 SYSTEM INTERRUPTION BEGAN',
       'system_ended': '🟢 SYSTEM INTERRUPTION ENDED'
     };
-    
+
     return descriptions[type] || `❓ UNKNOWN: ${type}`;
   }
 }

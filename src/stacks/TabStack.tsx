@@ -1,4 +1,4 @@
-import { Alert, Image, StyleSheet, View, AppState, Linking } from 'react-native';
+import { Alert, Image, StyleSheet, View, AppState, Linking, TouchableOpacity, Text } from 'react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Settings, TrustedContacts, LiveStream, SafeZone, Premium, HeadsUp, SafeWord, SafeWordTraining, PasscodeSettings, HowToUse, Footages, BodyCam, HeadsUpSettings, SiriSetupScreen } from '../screens';
@@ -97,7 +97,7 @@ export const TabStack: React.FC = () => {
     ? userDetails.user.gender
     : 'male';
 
-  // 🔥 EXACT SAME AUDIO NAME STRING AS OLD APPROACH
+  //  EXACT SAME AUDIO NAME STRING AS OLD APPROACH
   const audioNameString =
     userDetails?.user?.first_name +
     userDetails?.user?.last_name +
@@ -106,32 +106,43 @@ export const TabStack: React.FC = () => {
     '-' +
     safeWord;
 
-  // 🔥 EXACT SAME WEBSOCKET REF AS OLD APPROACH
+  // EXACT SAME WEBSOCKET REF AS OLD APPROACH
   const ws = useRef<WebSocket | null>(null);
 
   // UI states
   const navigationState = useNavigationState(state => state);
-  const currentTabName = navigationState?.routes?.[navigationState.index]?.name || 'LiveStream';
-  const cameraMode = useSelector((state: RootState) => state.home.cameraMode || 'AUDIO');
+  const tabState = navigationState?.routes?.[navigationState.index]?.state;
+
+  const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'LiveStream';
+  console.log('Full navigation state:', navigationState);
+  console.log('Navigation index:', navigationState?.index);
+  console.log('Current route:', navigationState?.routes?.[navigationState.index]);
+
   const threatAlertMode = useSelector((state: RootState) => state.home.threatAlertMode);
   const headsUpRadius = useSelector((state: RootState) => state.home.headsUpRadius || 3);
   const userLocation = useSelector((state: RootState) => state.home.userLocation);
   const [hasThreatsInRadius, setHasThreatsInRadius] = useState(false);
 
-  const isOnLiveStreamTab = currentTabName === 'LiveStream';
+  const cameraMode = useSelector((state: RootState) => state.home.cameraMode || 'AUDIO');
   const isVideoMode = cameraMode === 'VIDEO';
+  const isOnLiveStreamTab = currentTabName === 'LiveStream';
+
+  console.log('TabStack - cameraMode:', cameraMode);
+  console.log('TabStack - isVideoMode calculation:', cameraMode === 'VIDEO');
+  console.log('TabStack - currentTabName:', currentTabName);
+  console.log('TabStack - isOnLiveStreamTab:', isOnLiveStreamTab);
 
   // Voice UI states
   const [showVoiceUI, setShowVoiceUI] = useState(false);
   const [voiceUIState, setVoiceUIState] = useState<'listening' | 'processing' | 'detected'>('listening');
   const [audioLevel, setAudioLevel] = useState(0.5);
 
-  // 🔥 EXACT SAME WEBSOCKET STATES AS OLD APPROACH
+  // EXACT SAME WEBSOCKET STATES AS OLD APPROACH
   const [isWebSocketActive, setIsWebSocketActive] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const audioStreamRef = useRef<boolean>(false);
 
-  // 🔥 NEW: Enhanced interruption states
+  // NEW: Enhanced interruption states
   const [isAudioServicesSuspended, setIsAudioServicesSuspended] = useState(false);
   const [lastInterruptionType, setLastInterruptionType] = useState<string>('');
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -150,6 +161,11 @@ export const TabStack: React.FC = () => {
     const minutes = parseInt(timer.replace('m', ''));
     return minutes * 60 * 1000;
   };
+
+  console.log('TabStack - currentTabName:', currentTabName);
+  console.log('TabStack - cameraMode:', cameraMode);
+  console.log('TabStack - isOnLiveStreamTab:', isOnLiveStreamTab);
+  console.log('TabStack - isVideoMode:', isVideoMode);
 
   const startArmingTimer = useCallback(() => {
     if (armingTimerId) {
@@ -170,6 +186,21 @@ export const TabStack: React.FC = () => {
   }, [activeTimer, armingTimerId, dispatch]);
 
   useEffect(() => {
+    const requestNotificationPermission = async () => {
+      try {
+        console.log('🔔 Requesting notification permission on TabStack mount...');
+        await notifee.requestPermission();
+        console.log('✅ Notification permission requested');
+      } catch (error) {
+        console.error('❌ Failed to request notification permission:', error);
+      }
+    };
+
+    // Request notification permission immediately when TabStack mounts
+    requestNotificationPermission();
+  }, []);
+
+  useEffect(() => {
     console.log('🗣️ Setting up Hey Siri detection listener...');
 
     const heySiriListener = audioSessionService.addListener('HeySiriDetected', (event: HeySiriDetectedEvent) => {
@@ -178,12 +209,6 @@ export const TabStack: React.FC = () => {
 
       // Show the modal to inform user
       setShowSiriBlockedModal(true);
-
-      // Optional: Show notification as well
-      onDisplayNotification(
-        'Siri Blocked',
-        'Cannot use Siri while Rove is active. Press and hold power button to use Siri.'
-      );
     });
 
     return () => {
@@ -256,7 +281,7 @@ export const TabStack: React.FC = () => {
     NavigationService.navigate('LiveStream');
   };
 
-  // 🔥 ENHANCED: Cleanup effect with enhanced audio session service
+  // ENHANCED: Cleanup effect with enhanced audio session service
   useEffect(() => {
     if (isAudioStreamStopped) {
       console.log('🔴 Audio stream stopped - cleaning up enhanced audio services');
@@ -287,12 +312,12 @@ export const TabStack: React.FC = () => {
     }
   }, []);
 
-  // 🔥 EXACT SAME MODEL UPDATE AS OLD APPROACH
+  // EXACT SAME MODEL UPDATE AS OLD APPROACH
   useEffect(() => {
     setCurrentModel(selectedModel);
   }, [selectedModel]);
 
-  // 🔥 EXACT SAME THREAT DETECTION FUNCTIONS AS OLD APPROACH
+  // EXACT SAME THREAT DETECTION FUNCTIONS AS OLD APPROACH
   const threatDetected = () => {
     dispatch(HomeActions.setThreatDetected(true));
     onDisplayNotification(
@@ -309,7 +334,7 @@ export const TabStack: React.FC = () => {
     );
   };
 
-  // 🔥 EXACT SAME STATE EFFECTS AS OLD APPROACH
+  //  EXACT SAME STATE EFFECTS AS OLD APPROACH
   useEffect(() => {
     console.log('🔄 isSafeWord changed from', isSafeWord, 'to', sw);
     setIsSafeWord(sw);
@@ -319,13 +344,14 @@ export const TabStack: React.FC = () => {
     setIsSafeZone(sz);
   }, [sz]);
 
-  // 🔥 EXACT SAME NOTIFICATION FUNCTION AS OLD APPROACH
+  // EXACT SAME NOTIFICATION FUNCTION AS OLD APPROACH
   const onDisplayNotification = async (title: string, body: string) => {
-    await notifee.requestPermission();
+
     const channelId = await notifee.createChannel({
       id: 'default',
       name: 'Default Channel',
     });
+
     await notifee.displayNotification({
       title: title,
       body: body,
@@ -340,7 +366,7 @@ export const TabStack: React.FC = () => {
 
   console.log('safeWord', safeWord);
 
-  // 🔥 EXACT SAME WEBSOCKET SETUP AS OLD APPROACH
+  // EXACT SAME WEBSOCKET SETUP AS OLD APPROACH
   const setupWebSocket = useCallback(() => {
     console.log('🌐 Creating WebSocket connection to:', currentModel);
     console.log('🔗 Will send audioNameString:', audioNameString);
@@ -714,6 +740,21 @@ export const TabStack: React.FC = () => {
     }, duration);
   };
 
+  const siriBlockedModalConfig = {
+    title: "Siri access blocked",
+    isImageIcon: true,
+    content: (
+      <View>
+        <CustomText.RegularText customStyle={styles.helpModalText}>
+          Siri voice activation won't work while Rove is active. This is because Rove needs exclusive access to the microphone for threat detection.
+        </CustomText.RegularText>
+        <CustomText.RegularText customStyle={styles.helpModalText}>
+          To use Siri, press and hold the side button on your device.
+        </CustomText.RegularText>
+      </View>
+    )
+  };
+
   // UI helper functions
   const getIconSize = (iconName: string) => {
     switch (iconName) {
@@ -770,11 +811,11 @@ export const TabStack: React.FC = () => {
           screenOptions={{
             headerShown: false,
             tabBarStyle: {
-              position: isVideoMode ? 'absolute' : 'relative',
-              bottom: isVideoMode ? 0 : undefined,
+              position: (isVideoMode && isOnLiveStreamTab) ? 'absolute' : 'relative',
+              bottom: (isVideoMode && isOnLiveStreamTab) ? 0 : undefined,
+              backgroundColor: (isVideoMode && isOnLiveStreamTab) ? 'transparent' : 'rgba(0, 0, 0, 0.9)',
               left: 0,
               right: 0,
-              backgroundColor: isVideoMode ? 'transparent' : 'rgba(0, 0, 0, 0.9)',
               shadowOpacity: 0,
               borderTopWidth: 0,
               elevation: 0,
@@ -849,31 +890,47 @@ export const TabStack: React.FC = () => {
         </View>
       </CustomModal>
 
-      {/* NEW: Hey Siri blocked modal */}
-      <CustomModal
-        visible={showSiriBlockedModal}
-        smallModal
-        onClose={() => setShowSiriBlockedModal(false)}>
-        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
-          <CustomText.MediumText customStyle={{ letterSpacing: 0.9, textAlign: 'center', marginBottom: 10 }}>
-            Siri Cannot Be Used
-          </CustomText.MediumText>
-          <CustomText.SmallText customStyle={{ textAlign: 'center', marginBottom: 15, lineHeight: 20 }}>
-            Siri voice activation won’t work while Rove is active. Hold the side button to use Siri
-          </CustomText.SmallText>
+      {showSiriBlockedModal && (
+        <View style={styles.helpModalOverlay}>
+          <View style={styles.helpModalContainer}>
+            {/* Close button */}
+            <TouchableOpacity
+              style={styles.helpModalCloseButton}
+              onPress={() => setShowSiriBlockedModal(false)}
+            >
+              <Text style={styles.helpModalCloseText}>✕</Text>
+            </TouchableOpacity>
+
+            {/* Header */}
+            <View style={styles.helpModalHeader}>
+              <CustomText.MediumText customStyle={styles.helpModalTitle}>
+                {siriBlockedModalConfig.title}
+              </CustomText.MediumText>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.helpModalDivider} />
+
+            {/* Content */}
+            <View style={styles.helpModalContentContainer}>
+              {siriBlockedModalConfig.content}
+            </View>
+
+            {/* Got It button */}
+            <View style={{ alignItems: 'center', marginTop: 15 }}>
+              <PrimaryButton
+                title="Got It"
+                customStyles={{ borderRadius: 10 }}
+                width={'60%'}
+                onPress={() => {
+                  console.log('User acknowledged Siri blocking');
+                  setShowSiriBlockedModal(false);
+                }}
+              />
+            </View>
+          </View>
         </View>
-        <View style={[styles.modalButtonContainer, { justifyContent: 'center' }]}>
-          <PrimaryButton
-            title="Got It"
-            customStyles={{ borderRadius: 10 }}
-            width={'60%'}
-            onPress={() => {
-              console.log('✅ User acknowledged Siri blocking');
-              setShowSiriBlockedModal(false);
-            }}
-          />
-        </View>
-      </CustomModal>
+      )}
 
       <VoiceDetectionUI
         visible={showVoiceUI}
@@ -945,5 +1002,87 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     lineHeight: Metrix.VerticalSize(12),
+  },
+  helpModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    zIndex: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+
+  helpModalContainer: {
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    padding: 20,
+    maxWidth: '100%',
+    minWidth: '80%',
+    position: 'relative',
+  },
+
+  helpModalCloseButton: {
+    position: 'absolute',
+    top: 0,
+    right: 5,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1001,
+  },
+
+  helpModalCloseText: {
+    color: '#8E8E93',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+
+  helpModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+
+  helpModalHeaderImage: {
+    width: 38,
+    height: 35,
+    marginRight: 12,
+    marginLeft: -4,
+    tintColor: '#FFFFFF',
+  },
+
+  helpModalTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+    flex: 1,
+    marginLeft: 0
+  },
+
+  helpModalDivider: {
+    height: 1,
+    backgroundColor: '#48484A',
+    marginBottom: 10,
+  },
+
+  helpModalContentContainer: {
+    paddingRight: 10,
+  },
+
+  helpModalText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+
+  highlightedText: {
+    color: '#57b5fa',
+    fontWeight: '600',
   },
 });

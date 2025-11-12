@@ -63,11 +63,11 @@ export const Premium: React.FC<PremiumProps> = ({ }) => {
 
   const [selectedPlan, setSelectedPlan] = useState('basic');
 
-  useFocusEffect(
-    React.useCallback(() => {
-      dispatch(HomeActions.setCameraMode('AUDIO'));
-    }, [dispatch])
-  );
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     dispatch(HomeActions.setCameraMode('AUDIO'));
+  //   }, [dispatch])
+  // );
 
   const renderPlanCard = (plan: any) => (
     <TouchableOpacity

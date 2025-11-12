@@ -18,10 +18,11 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import RNFS from 'react-native-fs';
 import CameraRoll from '@react-native-camera-roll/camera-roll';
 import { HomeActions } from '../../../redux/actions';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { VideoProcessingOverlayService } from '../../../utils/videoOverlay';
 import { LegendList } from '@legendapp/list';
+import { RootState } from '../../../redux/reducers';
 
 const formatCoordinates = (lat: number | null, lng: number | null): string => {
   if (lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng)) {
@@ -95,10 +96,12 @@ export const Footages: React.FC<FootagesProps> = ({ }) => {
 
   const bottomSheetRef = useRef<BottomSheet>(null);
 
+  const currentCameraMode = useSelector((state: RootState) => state.home.cameraMode || 'AUDIO');
+
   useFocusEffect(
     React.useCallback(() => {
-      dispatch(HomeActions.setCameraMode('AUDIO'));
-    }, [dispatch])
+      dispatch(HomeActions.setCameraMode(currentCameraMode));
+    }, [dispatch, currentCameraMode])
   );
 
   const wait = (timeout: any) => {
@@ -347,7 +350,7 @@ export const Footages: React.FC<FootagesProps> = ({ }) => {
         incident={{
           id: item.id,
           type: item.hasVideo ? 'video' : 'audio',
-          streetName: item.displayStreetName, 
+          streetName: item.displayStreetName,
           triggerType: item.triggerType,
           dateTime: item.createdAt,
           thumbnailUrl: item.thumbnailUrl,
@@ -400,18 +403,18 @@ export const Footages: React.FC<FootagesProps> = ({ }) => {
         data={data}
         renderItem={renderIncidentItem}
         keyExtractor={keyExtractor}
-        
+
         // Enable recycling for maximum performance
         recycleItems={true}
-        
+
         // Header and Footer components
         ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={renderFooter}
-        
+
         // Styling
         contentContainerStyle={styles.flatlist}
         showsVerticalScrollIndicator={true}
-        
+
         // Pagination
         onEndReached={loadMoreIncidents}
         onEndReachedThreshold={0.1}

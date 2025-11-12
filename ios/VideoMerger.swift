@@ -486,7 +486,7 @@ private func createTimestampOverlayLayer(
     let logoSpacing: CGFloat = 24
     let timestampHeight: CGFloat = 20
     let roveHeight: CGFloat = 18
-    let textSpacing: CGFloat = 4
+    let textSpacing: CGFloat = 0 //4
     let textHeight = timestampHeight + textSpacing + roveHeight
     let textWidth: CGFloat = 160
     let totalWidth = textWidth + logoSpacing + logoSize
@@ -555,7 +555,7 @@ private func createTimestampOverlayLayer(
         timestampLayer.fontSize = 16
         timestampLayer.foregroundColor = UIColor.white.cgColor
         timestampLayer.backgroundColor = UIColor.clear.cgColor
-        timestampLayer.alignmentMode = .left
+        timestampLayer.alignmentMode = .right //left
         timestampLayer.font = CTFontCreateWithName("Helvetica-Bold" as CFString, 16, nil)
         timestampLayer.contentsScale = UIScreen.main.scale
         timestampLayer.shadowColor = UIColor.black.cgColor
@@ -563,7 +563,7 @@ private func createTimestampOverlayLayer(
         timestampLayer.shadowOpacity = 0.8
         timestampLayer.shadowRadius = 3
         timestampLayer.frame = CGRect(
-            x: containerX,
+            x: containerX + 10,
             y: containerY + totalHeight - timestampHeight,
             width: textWidth,
             height: timestampHeight
@@ -777,7 +777,7 @@ private func createTimestampOverlayLayer(
     // Calculate text dimensions
     let timestampHeight: CGFloat = 20
     let roveHeight: CGFloat = 18
-    let textSpacing: CGFloat = 4
+    let textSpacing: CGFloat = 0 //4
     let textHeight = timestampHeight + textSpacing + roveHeight
     
     // Calculate total dimensions including logo (logo now on RIGHT of text)
@@ -815,7 +815,7 @@ private func createTimestampOverlayLayer(
     timestampTextLayer.shadowOpacity = 0.8
     timestampTextLayer.shadowRadius = 3
     timestampTextLayer.frame = CGRect(
-      x: containerX,
+      x: containerX + 10,
       y: containerY + totalHeight - timestampHeight,
       width: textWidth,
       height: timestampHeight
