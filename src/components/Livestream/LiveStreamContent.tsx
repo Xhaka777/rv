@@ -61,6 +61,7 @@ export default function LiveStreamContent({
               styles.audioIcon,
               {
                 tintColor: Utills.selectedThemeColors().PrimaryTextColor,
+                marginLeft: -2.5
               },
             ]}
             resizeMode="contain"

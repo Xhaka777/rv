@@ -2166,7 +2166,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
                 {!isStreaming && (
                   <View style={[
                     styles.modeSelectorContainer,
-                    { bottom: mode === 'VIDEO' ? '21%' : '15%' }
+                    { bottom: mode === 'VIDEO' ? '20.8%' : '15%' }
                   ]}>
                     <LiveStreamModeSelector
                       currentMode={mode}
@@ -2179,7 +2179,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
               </View>
 
               <View style={[styles.bottomContainer,
-              { bottom: mode === 'VIDEO' ? '7.5%' : '0%' }
+              { bottom: mode === 'VIDEO' ? '6.9%' : '0%' }
               ]}>
                 {/* LEFT SIDE - Play/Footage Button (moved from right) */}
                 <TouchableOpacity
@@ -2493,6 +2493,7 @@ const styles = StyleSheet.create({
     width: Metrix.HorizontalSize(50),
     height: Metrix.VerticalSize(50),
     borderRadius: Metrix.HorizontalSize(5),
+    marginLeft: -2,
   },
 
   circularContact: {
