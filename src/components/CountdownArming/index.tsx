@@ -157,7 +157,7 @@ const CountdownArming: React.FC<CountdownUIProps> = ({
 
                         {/* Completion text */}
                         <Text style={styles.completionText}>
-                            * Unlocking your phone will deactivate!
+                            * Tap or swipe to deactive!
                         </Text>
                     </Animated.View>
                 )}

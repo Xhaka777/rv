@@ -200,41 +200,48 @@ export const TabStack: React.FC = () => {
     requestNotificationPermission();
   }, []);
 
-  // Add this useEffect to handle app state changes
-  useEffect(() => {
-    const handleAppStateChange = async (nextAppState: string) => {
-      console.log('📱 App state changed to:', nextAppState);
+useEffect(() => {
+  const handleAppStateChange = async (nextAppState: string) => {
+    console.log('📱 App state changed to:', nextAppState);
 
-      if (nextAppState === 'active') {
-        // App became active - check if we should have mic services running
-        if (isSafeWord && !isSafeZone && !isAudioServicesSuspended) {
-          console.log('🔄 App active - checking microphone recovery...');
-
-          // Small delay to let system settle
-          setTimeout(async () => {
-            try {
-              const result = await audioSessionService.forceRecoverMicrophone();
-              console.log('🔄 Recovery result:', result);
-
-              if (!result.success) {
-                console.log('❌ Recovery failed - restarting services manually');
-                // Fallback: restart services from scratch
-                await stopAllAudioServices();
-                setTimeout(() => {
-                  startStreaming();
-                }, 500);
-              }
-            } catch (error) {
-              console.error('❌ Recovery attempt failed:', error);
-            }
-          }, 1000);
-        }
+    // NEW: Dismiss FakeLockScreen when app goes to background
+    if (nextAppState === 'background' || nextAppState === 'inactive') {
+      console.log('📱 App went to background/inactive - dismissing FakeLockScreen');
+      if (showFakeLockScreen) {
+        dispatch(HomeActions.setShowFakeLockScreen(false));
       }
-    };
+    }
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription?.remove();
-  }, [isSafeWord, isSafeZone, isAudioServicesSuspended]);
+    if (nextAppState === 'active') {
+      // App became active - check if we should have mic services running
+      if (isSafeWord && !isSafeZone && !isAudioServicesSuspended) {
+        console.log('🔄 App active - checking microphone recovery...');
+
+        // Small delay to let system settle
+        setTimeout(async () => {
+          try {
+            const result = await audioSessionService.forceRecoverMicrophone();
+            console.log('🔄 Recovery result:', result);
+
+            if (!result.success) {
+              console.log('❌ Recovery failed - restarting services manually');
+              // Fallback: restart services from scratch
+              await stopAllAudioServices();
+              setTimeout(() => {
+                startStreaming();
+              }, 500);
+            }
+          } catch (error) {
+            console.error('❌ Recovery attempt failed:', error);
+          }
+        }, 1000);
+      }
+    }
+  };
+
+  const subscription = AppState.addEventListener('change', handleAppStateChange);
+  return () => subscription?.remove();
+}, [isSafeWord, isSafeZone, isAudioServicesSuspended, showFakeLockScreen, dispatch]); 
 
   useEffect(() => {
     console.log('🗣️ Setting up Hey Siri detection listener...');

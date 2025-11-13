@@ -85,6 +85,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const [contactsLoading, setContactsLoading] = useState(true);
 
   const [isThreatDetectionArmed, setIsThreatDetectionArmed] = useState(false);
+
   const [isEyeCam, setIsEyeCam] = useState(preferenceState === 'AS');
   const [isRespondersCam, setIsRespondersCam] = useState(true); // true = RespondersCam, false = LocalDownload
   const [isHelpMode, setIsHelpMode] = useState(false); // Track if help mode is active
@@ -291,6 +292,13 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       setShowCountdown(true);
     }
   }, [shouldArmOnLivestream, dispatch]);
+
+  useEffect(() => {
+    //
+    if (!showFakeLockScreen && isThreatDetectionArmed) {
+      setIsThreatDetectionArmed(false);
+    }
+  }, [showFakeLockScreen, isThreatDetectionArmed]);
 
   // Add this useEffect in your LiveStream component
   useEffect(() => {
@@ -2347,34 +2355,10 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         )}
 
       </SafeAreaView>
-      {/* {showFakeLockScreen && (
-        <FakeLockScreen
-          visible={showFakeLockScreen}
-          onUnlock={() => {
-            setShowFakeLockScreen(false);
-            setIsThreatDetectionArmed(false);
-            showToastNotification('Rove protection deactivated');
-          }}
-        />
-      )} */}
     </View>
   );
 };
-const getTimerFont = () => {
-  if (Platform.OS === 'ios') {
-    return {
-      fontFamily: 'SF Pro Display',
-      fontWeight: '600', // Semi-bold
-      fontVariant: ['tabular-nums'],
-    };
-  } else {
-    return {
-      fontFamily: 'Roboto',
-      fontWeight: '500', // Medium on Android
-      fontVariant: ['tabular-nums'],
-    };
-  }
-};
+
 const styles = StyleSheet.create({
   headerContainer: {
     position: 'absolute',
