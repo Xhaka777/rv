@@ -198,6 +198,9 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const translateX = useSharedValue(0);
   const modeIndex = useSharedValue(0); // 0 for AUDIO, 1 for VIDEO
 
+  //
+  const responderUidMapRef = useRef({});
+
   const userCordinates = useSelector(
     (state: RootState) => state.home.userLocation,
   );
@@ -416,7 +419,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     }, [])
   );
 
-  // ✅ NEW: Enhanced toast notification
+  // NEW: Enhanced toast notification
   // const leftHeaderOptions = [
   //   {
   //     id: '1',
@@ -926,7 +929,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     try {
       if (!isRespondersCam) {
         console.log('💾 [DEBUG] LocalDownload mode - skipping responder messages');
-        let array: any = []; // ✅ CHANGE: Start with empty array
+        let array: any = [];
 
         if (!isStreaming) {
           setSeconds(0); setMinutes(0); setHours(0);
@@ -939,15 +942,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
         joinChannel(token, incidentId);
         toggleShape();
         startRecordingAPI(token, incidentId);
-        setViewers(array); // ✅ Will be empty initially
+        // setViewers(array);
         return;
       }
 
       if (isTestStream && testStreamContact) {
         console.log('🧪 [DEBUG] Test stream mode for contact:', testStreamContact.name);
-        let array: any = []; // ✅ CHANGE: Start with empty array, will populate via onUserJoined
+        let array: any = [];
 
-        setViewers(array); // ✅ Empty initially
+        // setViewers(array); 
 
         if (!isStreaming) {
           setSeconds(0); setMinutes(0); setHours(0);
@@ -978,6 +981,18 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       const res = await HomeAPIS.postMsg(messageBody);
       console.log('✅ [DEBUG] postMessage response:', JSON.stringify(res?.data, null, 2));
 
+      const map = {};
+      res?.data?.results?.forEach(item => {
+        if (item?.uid && item?.name) {
+          map[item.uid] = item.name;
+        }
+      });
+
+      // Save map for onUserJoined
+      responderUidMapRef.current = map;
+
+      console.log('👥 Mapped Responder UIDs:', responderUidMapRef.current);
+
       startRecordingAPI(token, incidentId);
 
       let array: any = []; // ✅ CHANGE: Start with empty array
@@ -1002,7 +1017,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       // });
 
       console.log('💬 [DEBUG] Viewers array:', JSON.stringify(array, null, 2));
-      setViewers(array);
+      // setViewers(array);
     } catch (err) {
       console.error('❌ [postMessage] Message sending failed:', err.response?.data || err.message);
       console.error('❌ [postMessage] Error status:', err.response?.status);
@@ -1104,7 +1119,22 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
     agoraEngine.registerEventHandler({
       onJoinChannelSuccess: () => setJoinChannelSuccess(true),
-      onUserJoined: uid => setRemoteUsers(prevUsers => [...prevUsers, uid]),
+      onUserJoined: uid => {
+        console.log('Real viewer joined with UID:', uid);
+
+        setRemoteUsers(prev => [...prev, uid]);
+
+        const name = responderUidMapRef.current[uid] || `Responder ${uid}`;
+
+        setViewers(prev => [
+          ...prev,
+          {
+            id: uid.toString(),
+            name,
+            color: '#FFFFFF'
+          }
+        ]);
+      },
       onUserOffline: uid =>
         setRemoteUsers(prevUsers => prevUsers.filter(user => user !== uid)),
     });
