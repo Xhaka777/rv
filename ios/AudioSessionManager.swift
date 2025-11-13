@@ -427,13 +427,94 @@ class AudioSessionManager: RCTEventEmitter {
     }
     
     @objc private func handleAppDidBecomeActive() {
-        print("📱 [AUDIO_SESSION] App did become active")
+        print("📱 [AUDIO_SESSION] App did become active - attempting mic recovery")
         sendDebugLog("📱 App returned to foreground")
+        
+        // CRITICAL: Force mic recovery attempt
+        attemptMicrophoneRecovery()
         
         if isRecording || isStreamingAudio || recognitionTask != nil {
             verifyServicesAreActuallyWorking()
         }
     }
+
+    private func attemptMicrophoneRecovery() {
+        // Check if we should have services running but they're not
+        let shouldHaveServices = isRecording || isStreamingAudio || recognitionTask != nil
+        let hasActiveEngine = audioEngine.isRunning
+        
+        print("🔄 [RECOVERY] Should have services: \(shouldHaveServices), Engine running: \(hasActiveEngine)")
+        
+        if shouldHaveServices && !hasActiveEngine {
+            print("🔄 [RECOVERY] Services should be active but aren't - forcing recovery")
+            forceRecoverySequence()
+        } else if !shouldHaveServices {
+            // Check if app expects to have mic based on React Native state
+            print("🔄 [RECOVERY] No active services - checking if we should restart based on app state")
+            // This will be triggered from React Native side
+        }
+    }
+
+    private func forceRecoverySequence() {
+        print("🔧 [RECOVERY] Starting force recovery sequence")
+        
+        // Store what should be running
+        let shouldStream = isStreamingAudio
+        let shouldRecognize = recognitionTask != nil
+        let shouldRecord = isRecording
+        
+        // Stop everything
+        stopAllServices()
+        
+        // Wait and restart
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            do {
+                // Force reactivate session
+                try self.audioSession.setCategory(.playAndRecord,
+                                                mode: .default,
+                                                options: [.allowBluetooth, .defaultToSpeaker])
+                try self.audioSession.setActive(true, options: [])
+                
+                // Restart what was running
+                if shouldStream {
+                    try self.startAudioStreaming()
+                    print("✅ [RECOVERY] Audio streaming restarted")
+                }
+                
+                if shouldRecognize {
+                    try self.startSpeechRecognitionInternal()
+                    print("✅ [RECOVERY] Speech recognition restarted")
+                }
+                
+                self.sendDebugLog("✅ Force recovery completed successfully")
+                
+            } catch {
+                print("❌ [RECOVERY] Force recovery failed: \(error)")
+                self.sendDebugLog("❌ Force recovery failed: \(error.localizedDescription)")
+                }
+            }
+    }
+
+     @objc func forceRecoverMicrophone(
+    _ resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        print("🔧 [RN] Force microphone recovery requested")
+        
+        forceRecoverySequence()
+        
+        // Return current state after recovery attempt
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            let recovered = self.audioEngine.isRunning || self.isStreamingAudio || self.recognitionTask != nil
+            resolve([
+                "success": recovered,
+                "message": recovered ? "Microphone recovered successfully" : "Recovery attempted but may need manual restart",
+                "isEngineRunning": self.audioEngine.isRunning,
+                "isStreaming": self.isStreamingAudio,
+                "isSpeechActive": self.recognitionTask != nil
+            ])
+        }
+    }   
     
     private func verifyServicesAreActuallyWorking() {
         guard isRecording || isStreamingAudio || recognitionTask != nil else { return }
@@ -1125,32 +1206,21 @@ class AudioSessionManager: RCTEventEmitter {
           micStatus = "⚠️ SESSION INACTIVE"
       }
 
-      // 🧠 NEW: auto-resume logic
-      if micStatus == "⚪ MIC AVAILABLE BUT NOT LISTENING"
-          && (wasPausedForSiri || isSuspended)
-          && hasPermission
-      {
-          print("🔄 [AUDIO_SESSION] Mic became available - auto reactivating session")
-          wasPausedForSiri = false
-          isSuspended = false
+      //  NEW: auto-resume logic
+        if micStatus == "⚪ MIC AVAILABLE BUT NOT LISTENING"
+            && (wasPausedForSiri || isSuspended)
+            && hasPermission
+            && isAppActive  // Only when app is actually active
+        {
+            print("🔄 [AUTO-RESUME] Mic available + app active - force recovering")
+            wasPausedForSiri = false
+            isSuspended = false
 
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-              do {
-                  try self.audioSession.setCategory(.playAndRecord,
-                                                    mode: .default,
-                                                    options: [.allowBluetooth, .defaultToSpeaker])
-                  try self.audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                  print("✅ [AUDIO_SESSION] Auto-reactivated after mic became available")
-                  self.sendDebugLog("✅ Auto-reactivated when mic became available")
-
-                  // Resume previous services
-                  self.attemptToResumeServices()
-              } catch {
-                  print("❌ [AUDIO_SESSION] Auto-reactivation failed: \(error)")
-                  self.sendDebugLog("❌ Auto-reactivation failed: \(error.localizedDescription)")
-              }
-          }
-      }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // More aggressive recovery
+                self.forceRecoverySequence()
+            }
+        }
 
       // existing event emission logic...
       if hasListeners {

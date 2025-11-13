@@ -37,6 +37,14 @@ interface AudioSessionModule {
   }>;
   requestMicPermission(): Promise<boolean>;
   getRecordingsList(): Promise<any[]>;
+
+  forceRecoverMicrophone(): Promise<{
+    success: boolean;
+    message: string;
+    isEngineRunning: boolean;
+    isStreaming: boolean;
+    isSpeechActive: boolean;
+  }>;
 }
 
 // Event interfaces
@@ -305,6 +313,22 @@ export class AudioSessionService {
     } catch (error) {
       console.error('Failed to request mic permission:', error);
       return false;
+    }
+  }
+
+  async forceRecoverMicrophone(): Promise<{ success: boolean; message: string; isEngineRunning: boolean; isStreaming: boolean; isSpeechActive: boolean }> {
+    try {
+      const result = await AudioSessionManager.forceRecoverMicrophone();
+      return result;
+    } catch (error) {
+      console.error('Failed to force recover microphone:', error);
+      return {
+        success: false,
+        message: `Error: ${error}`,
+        isEngineRunning: false,
+        isStreaming: false,
+        isSpeechActive: false
+      };
     }
   }
 

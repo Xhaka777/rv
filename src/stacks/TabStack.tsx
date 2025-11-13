@@ -200,6 +200,42 @@ export const TabStack: React.FC = () => {
     requestNotificationPermission();
   }, []);
 
+  // Add this useEffect to handle app state changes
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: string) => {
+      console.log('📱 App state changed to:', nextAppState);
+
+      if (nextAppState === 'active') {
+        // App became active - check if we should have mic services running
+        if (isSafeWord && !isSafeZone && !isAudioServicesSuspended) {
+          console.log('🔄 App active - checking microphone recovery...');
+
+          // Small delay to let system settle
+          setTimeout(async () => {
+            try {
+              const result = await audioSessionService.forceRecoverMicrophone();
+              console.log('🔄 Recovery result:', result);
+
+              if (!result.success) {
+                console.log('❌ Recovery failed - restarting services manually');
+                // Fallback: restart services from scratch
+                await stopAllAudioServices();
+                setTimeout(() => {
+                  startStreaming();
+                }, 500);
+              }
+            } catch (error) {
+              console.error('❌ Recovery attempt failed:', error);
+            }
+          }, 1000);
+        }
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [isSafeWord, isSafeZone, isAudioServicesSuspended]);
+
   useEffect(() => {
     console.log('🗣️ Setting up Hey Siri detection listener...');
 

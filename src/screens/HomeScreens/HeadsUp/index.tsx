@@ -406,11 +406,11 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     getCurrentLocation();
   }, [isFocus]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      dispatch(HomeActions.setCameraMode('AUDIO'));
-    }, [dispatch])
-  );
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     dispatch(HomeActions.setCameraMode('AUDIO'));
+  //   }, [dispatch])
+  // );
 
   // Add this useEffect near the top of the component
   // useFocusEffect(

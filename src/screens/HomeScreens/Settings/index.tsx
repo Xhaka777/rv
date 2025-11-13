@@ -275,11 +275,11 @@ export const Settings: React.FC<SettingsProps> = ({ }) => {
     },
   ];
 
-  useFocusEffect(
-    React.useCallback(() => {
-      dispatch(HomeActions.setCameraMode('AUDIO'));
-    }, [dispatch])
-  );
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     dispatch(HomeActions.setCameraMode('AUDIO'));
+  //   }, [dispatch])
+  // );
 
   useEffect(() => {
     getUser();

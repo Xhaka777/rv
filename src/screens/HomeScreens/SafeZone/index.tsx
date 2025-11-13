@@ -396,11 +396,11 @@ export const SafeZone: React.FC<SafeZoneProps> = ({ navigation, route }) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      dispatch(HomeActions.setCameraMode('AUDIO'));
-    }, [dispatch])
-  );
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     dispatch(HomeActions.setCameraMode('AUDIO'));
+  //   }, [dispatch])
+  // );
 
   useEffect(() => {
     getCurrentLocation();

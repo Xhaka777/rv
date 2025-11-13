@@ -26,6 +26,7 @@ import {
   Text,
   PermissionsAndroid,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   FontType,
@@ -63,6 +64,7 @@ import LiveStreamModeSelector from '../../../components/Livestream/LiveStreamMod
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import CountdownArming from '../../../components/CountdownArming';
 import { getDeviceToken } from '../../../utils/deviceTokenStorage';
+import { VideoMergerService } from '../../../services/videoMerger';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -184,6 +186,9 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
   const [showCountdown, setShowCountdown] = useState(false);
   const [showFakeLockScreen, setShowFakeLockScreen] = useState(false);
+
+  //for localdownload video...
+  const [isProcessingVideo, setIsProcessingVideo] = useState(false);
 
   //timer selector for arming...
   const activeTimer = useSelector((state: RootState) => state.home.activeTimer || '30m');
@@ -530,20 +535,14 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     {
       id: '2',
       key: 'Responders/Download Toggle',
-      icon: isRespondersCam ? Images.RespondersCam : Images.LocalDownload,
+      icon: isHelpMode ? Images.LocalDownload : (isRespondersCam ? Images.RespondersCam : Images.LocalDownload),
       onPress: () => {
         if (isHelpMode) {
-          // Show appropriate help modal based on current state (but NOT the respondersCam modal)
-          if (isRespondersCam) {
-            // Show a different help modal for RespondersCam toggle, not the arming modal
-            setHelpModalContent(helpModalConfigs.localDownload); // or create a new config for this
-          } else {
-            setHelpModalContent(helpModalConfigs.localDownload);
-          }
+          //  Always show localDownload content in help mode
+          setHelpModalContent(helpModalConfigs.localDownload);
           setHelpModalVisible(true);
           return;
         }
-
 
         // Normal functionality
         console.log('🔄 RespondersCam/LocalDownload toggle pressed');
@@ -1097,32 +1096,9 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
     agoraEngine.registerEventHandler({
       onJoinChannelSuccess: () => setJoinChannelSuccess(true),
-      onUserJoined: uid => {
-        console.log('👁️ User joined Agora channel:', uid);
-        setRemoteUsers(prevUsers => [...prevUsers, uid]);
-
-        // Add to viewers list (you'll need to map UID to contact info)
-        setViewers(prevViewers => {
-          // Check if already exists to avoid duplicates
-          const exists = prevViewers.find(viewer => viewer.uid === uid);
-          if (!exists) {
-            return [...prevViewers, {
-              id: uid.toString(),
-              uid: uid,
-              name: `Viewer ${uid}`, // You'll want to map this to actual contact name
-              color: '#FFFFFF',
-            }];
-          }
-          return prevViewers;
-        });
-      },
-      onUserOffline: uid => {
-        console.log('👁️ User left Agora channel:', uid);
-        setRemoteUsers(prevUsers => prevUsers.filter(user => user !== uid));
-
-        // Remove from viewers list
-        setViewers(prevViewers => prevViewers.filter(viewer => viewer.uid !== uid));
-      },
+      onUserJoined: uid => setRemoteUsers(prevUsers => [...prevUsers, uid]),
+      onUserOffline: uid =>
+        setRemoteUsers(prevUsers => prevUsers.filter(user => user !== uid)),
     });
 
     await askMediaAccess([
@@ -1565,36 +1541,114 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   );
 
   const handleLocalSave = async () => {
-    if (!isRespondersCam) { // Only save locally when LocalDownload is active
-      console.log('🔄 LocalDownload mode active - saving recordings locally');
+    if (!isRespondersCam) {
+      console.log('🔄 LocalDownload mode active - processing and saving recordings locally');
 
       try {
         const savedFiles: string[] = [];
 
-        // Save primary recording if it exists
-        if (localRecordingPaths.primary) {
-          const saved = await saveRecordingToGallery(
-            localRecordingPaths.primary,
-            mode === 'VIDEO'
-          );
-          if (saved) {
-            savedFiles.push('primary');
-          }
-        }
+        if (localRecordingPaths.primary && localRecordingPaths.secondary && mode === 'VIDEO') {
+          console.log('📹 Two video files found - merging with black screen transition...');
 
-        // Save secondary recording if it exists (front camera)
-        if (localRecordingPaths.secondary && mode === 'VIDEO') {
-          const saved = await saveRecordingToGallery(
-            localRecordingPaths.secondary,
-            true
-          );
-          if (saved) {
-            savedFiles.push('secondary');
-          }
-        }
+          setIsProcessingVideo(true);
 
-        if (savedFiles.length > 0) {
-          showToastNotification(`${savedFiles.length} recording(s) saved to gallery`);
+          // Create incident data for overlay processing
+          const incidentData = {
+            id: incident_id || `local_${Date.now()}`,
+            dateTime: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            streetName: `Live Stream ${new Date().toLocaleDateString()}`,
+            triggerType: 'Manual Live Stream'
+          };
+
+          try {
+            // Direct call to VideoMergerService with the actual file paths
+            const files = await RNFS.readDir(RNFS.DocumentDirectoryPath);
+            const videoFiles = files.filter(file =>
+              file.name.includes(incidentData.id) &&
+              file.name.includes('VIDEO') &&
+              file.name.endsWith('.mp4')
+            );
+
+            if (videoFiles.length >= 2) {
+              // Use the existing mergeAndSaveToGallery method
+              const success = await VideoMergerService.mergeAndSaveToGallery(
+                incidentData.id,
+                incidentData
+              );
+
+              if (success) {
+                showToastNotification('Merged ROVE security video saved to Photos!');
+                Alert.alert(
+                  'Success!',
+                  'ROVE video has been saved to your Photos!',
+                  [{ text: 'OK' }]
+                );
+                savedFiles.push('merged');
+
+                // ✅ IMPORTANT: Return early to prevent individual file saves
+                setLocalRecordingPaths({});
+                return;
+              } else {
+                throw new Error('Merge operation failed');
+              }
+            } else {
+              console.log('❌ Not enough video files found for merging');
+              await saveFallbackRecordings(savedFiles);
+            }
+          } catch (mergeError) {
+            console.error('❌ Video merge failed:', mergeError);
+            await saveFallbackRecordings(savedFiles);
+          }
+        } else if (localRecordingPaths.primary) {
+          // Single video file - add timestamp overlay only
+          console.log('📹 Single video file - adding timestamp overlay...');
+
+          setIsProcessingVideo(true);
+
+          try {
+            // Create incident data for overlay processing
+            const incidentData = {
+              id: incident_id || `local_${Date.now()}`,
+              dateTime: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              streetName: `Live Stream ${new Date().toLocaleDateString()}`,
+              triggerType: 'Manual Live Stream'
+            };
+
+            // Use VideoMergerService for single file with timestamp
+            const timestampOutputPath = `${RNFS.DocumentDirectoryPath}/timestamp_livestream_${Date.now()}.mp4`;
+
+            const result = await VideoMergerService.addTimestampOverlay(
+              localRecordingPaths.primary,
+              timestampOutputPath,
+              incidentData.dateTime,
+              incidentData.id
+            );
+
+            if (result.success) {
+              // Save to camera roll
+              await CameraRoll.save(timestampOutputPath, { type: 'video' });
+
+              // Cleanup temporary file
+              await RNFS.unlink(timestampOutputPath).catch(() => { });
+
+              showToastNotification('ROVE security video with timestamp saved to Photos!');
+              savedFiles.push('single with timestamp');
+            } else {
+              throw new Error('Timestamp overlay failed');
+            }
+          } catch (overlayError) {
+            console.error('❌ Timestamp overlay failed:', overlayError);
+            // Fallback: save original video
+            const saved = await saveRecordingToGallery(
+              localRecordingPaths.primary,
+              mode === 'VIDEO'
+            );
+            if (saved) {
+              savedFiles.push('primary (original)');
+            }
+          }
         }
 
         // Clear the paths
@@ -1602,7 +1656,54 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
       } catch (error) {
         console.error('❌ Error in handleLocalSave:', error);
+      } finally {
+        setIsProcessingVideo(false);
       }
+    }
+  };
+
+  const saveFallbackRecordings = async (savedFiles: string[]) => {
+    // Save primary recording if it exists
+    if (localRecordingPaths.primary) {
+      const saved = await saveRecordingToGallery(
+        localRecordingPaths.primary,
+        mode === 'VIDEO'
+      );
+      if (saved) {
+        savedFiles.push('primary (fallback)');
+      }
+    }
+
+    // Save secondary recording if it exists (front camera)
+    if (localRecordingPaths.secondary && mode === 'VIDEO') {
+      const saved = await saveRecordingToGallery(
+        localRecordingPaths.secondary,
+        true
+      );
+      if (saved) {
+        savedFiles.push('secondary (fallback)');
+      }
+    }
+
+    if (savedFiles.length > 0) {
+      showToastNotification(`${savedFiles.length} recording(s) saved to gallery (original files)`);
+    }
+  };
+
+  const prepareFilesForMerging = async () => {
+    if (!localRecordingPaths.primary || !localRecordingPaths.secondary) {
+      return false;
+    }
+
+    try {
+      // Validate both files exist
+      const primaryExists = await VideoMergerService.validateVideoFile(localRecordingPaths.primary);
+      const secondaryExists = await VideoMergerService.validateVideoFile(localRecordingPaths.secondary);
+
+      return primaryExists && secondaryExists;
+    } catch (error) {
+      console.error('Error validating video files:', error);
+      return false;
     }
   };
 
@@ -2239,6 +2340,11 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
             initialCount={3}
           />
         )}
+        {isProcessingVideo && (
+          <View style={styles.processingVideoLoader}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </View>
+        )}
 
       </SafeAreaView>
       {/* {showFakeLockScreen && (
@@ -2851,5 +2957,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     flex: 1, // Allow text to wrap if needed
   },
-
+  processingVideoLoader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Semi-transparent overlay
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000, // Make sure it appears above everything
+  },
 });

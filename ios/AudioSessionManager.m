@@ -55,6 +55,9 @@ RCT_EXTERN_METHOD(requestMicPermission:(RCTPromiseResolveBlock)resolve
 
 RCT_EXTERN_METHOD(getRecordingsList:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
+//                  
+RCT_EXTERN_METHOD(forceRecoverMicrophone:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
 
 + (BOOL)requiresMainQueueSetup
 {
