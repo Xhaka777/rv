@@ -58,7 +58,7 @@ export const BodyCam: React.FC<BodyCamProps> = ({ navigation }) => {
             console.log('SiriShortcutManager methods:', Object.keys(NativeModules.SiriShortcutManager));
         }
     }, []);
- 
+
     const handleTrainSiri = () => {
         NavigationService.navigate('SiriSetupScreen');
     };
@@ -70,19 +70,33 @@ export const BodyCam: React.FC<BodyCamProps> = ({ navigation }) => {
                 contentContainerStyle={styles.scrollContent}>
 
                 <View style={styles.headerContainer}>
-                    <View style={styles.headerIcon}>
-                        <RoundImageContainer
-                            source={Images.Premium}
-                            circleWidth={28}
-                            backgroundColor="transparent"
-                            imageStyle={{
-                                tintColor: Utills.selectedThemeColors().PrimaryTextColor,
-                            }}
-                        />
+                    <View style={styles.headerLeft}>
+                        <View style={styles.headerIcon}>
+                            <RoundImageContainer
+                                source={Images.Premium}
+                                circleWidth={28}
+                                backgroundColor="transparent"
+                                imageStyle={{
+                                    tintColor: Utills.selectedThemeColors().PrimaryTextColor,
+                                }}
+                            />
+                        </View>
+                        <CustomText.LargeBoldText customStyle={styles.headerTitle}>
+                            Bodycam Mode
+                        </CustomText.LargeBoldText>
                     </View>
-                    <CustomText.LargeBoldText customStyle={styles.headerTitle}>
-                        Bodycam Mode
-                    </CustomText.LargeBoldText>
+
+                    {/* Exit Button */}
+                    <TouchableOpacity
+                        style={styles.exitButton}
+                        onPress={() => navigation.goBack()}
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={Images.Exit}
+                            style={{ width: 20, height: 20 }}
+                            resizeMode='contain' />
+                    </TouchableOpacity>
                 </View>
 
 
@@ -262,9 +276,27 @@ const styles = StyleSheet.create({
     headerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: Metrix.VerticalSize(20),
         paddingTop: Metrix.VerticalSize(10),
-        marginTop: 10
+        marginTop: 10,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    exitButton: {
+        width: Metrix.HorizontalSize(40),
+        height: Metrix.VerticalSize(40),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: Metrix.HorizontalSize(20),
+    },
+    exitButtonText: {
+        color: Utills.selectedThemeColors().PrimaryTextColor,
+        fontSize: Metrix.customFontSize(18),
+        fontWeight: '600',
     },
     headerIcon: {
         marginRight: Metrix.HorizontalSize(5),

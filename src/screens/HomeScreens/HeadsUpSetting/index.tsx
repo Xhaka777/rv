@@ -66,6 +66,13 @@ export const HeadsUpSettings: React.FC = () => {
                         Heads Up Alert Settings
                     </CustomText.LargeBoldText>
                 </View>
+                <TouchableOpacity onPress={handleBack} style={styles.exitButton}>
+                    <Image
+                        source={Images.Exit}
+                        style={{ width: 20, height: 20, tintColor: '#ffffff' }}
+                        resizeMode="contain"
+                    />
+                </TouchableOpacity>
             </View>
 
             {/* Content */}
@@ -123,6 +130,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingVertical: Metrix.VerticalSize(15),
         // paddingHorizontal: Metrix.HorizontalSize(20),
         borderBottomWidth: 1,
@@ -148,6 +156,15 @@ const styles = StyleSheet.create({
         fontSize: Metrix.customFontSize(18),
         fontWeight: '600',
         color: Utills.selectedThemeColors().PrimaryTextColor,
+    },
+    exitButton: {
+        padding: Metrix.HorizontalSize(8),
+        marginLeft: Metrix.HorizontalSize(10),
+    },
+    exitIcon: {
+        width: Metrix.HorizontalSize(14),
+        height: Metrix.VerticalSize(14),
+        tintColor: Utills.selectedThemeColors().PrimaryTextColor,
     },
     content: {
         flex: 1,

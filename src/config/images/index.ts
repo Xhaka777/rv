@@ -197,6 +197,7 @@ const Images = {
 
   Apple: require('../../assets/icons/apple.png'),
   RoveWave: require('../../assets/icons/rove_wave.png'),
+  Exit: require('../../assets/icons/exit.png')
 };
 
 export default Images;

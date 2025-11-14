@@ -146,7 +146,7 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
 
   const handleTestStream = (contact: any) => {
     console.log('🧪 Starting test stream with contact:', contact);
-    
+
     // Navigate to TabStack and specify the LiveStream tab with parameters
     NavigationService.navigate(RouteNames.HomeRoutes.TabStack, {
       screen: 'LiveStream',
@@ -240,14 +240,28 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
     <MainContainer>
       {/* Premium icon back with title */}
       <View style={styles.headerContainer}>
-        <Image
-          source={Images.Premium}
-          style={styles.premiumIcon}
-          resizeMode="contain"
-        />
-        <CustomText.LargeBoldText customStyle={styles.headerTitle}>
-          Responders
-        </CustomText.LargeBoldText>
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIcon}>
+            <Image
+              source={Images.Premium}
+              style={styles.premiumIcon}
+              resizeMode="contain"
+            />
+            <CustomText.LargeBoldText customStyle={styles.headerTitle}>
+              Responders
+            </CustomText.LargeBoldText>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.exitButton}
+          onPress={() => NavigationService.goBack()}
+          activeOpacity={0.7}
+        >
+          <Image
+            source={Images.Exit}
+            style={{ width: 20, height: 20 }}
+            resizeMode='contain' />
+        </TouchableOpacity>
       </View>
 
       {/* Subtitle text */}
@@ -378,7 +392,27 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Metrix.VerticalSize(10),
+    justifyContent: 'space-between',
+    marginBottom: Metrix.VerticalSize(20),
+    paddingTop: Metrix.VerticalSize(10),
+    // marginTop: 10,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  exitButton: {
+    width: Metrix.HorizontalSize(40),
+    height: Metrix.VerticalSize(40),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Metrix.HorizontalSize(20),
+  },
+  exitButtonText: {
+    color: Utills.selectedThemeColors().PrimaryTextColor,
+    fontSize: Metrix.customFontSize(18),
+    fontWeight: '600',
   },
   headerTitle: {
     fontSize: Metrix.customFontSize(18),
