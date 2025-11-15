@@ -91,6 +91,8 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const [isDraggingThreat, setIsDraggingThreat] = useState(false);
   const [draggedThreatLocation, setDraggedThreatLocation] = useState(null);
   const [showLocationConfirmation, setShowLocationConfirmation] = useState(false);
+  const draggedThreatRef = useRef<{ latitude: number, longitude: number } | null>(null);
+
 
   const firstBottomSheetRef = useRef<BottomSheet>(null);
   const secondBottomSheetRef = useRef<BottomSheet>(null);
@@ -514,6 +516,8 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
 
   const handleTempThreatSelection = useCallback((threatData: { id: number, icon: any, label: string }) => {
     setTempThreatData(threatData);
+    console.log('🎯 INITIAL THREAT SETUP - Setting to current location:', currentLocation);
+
     setDraggedThreatLocation(currentLocation);
     setShowReportingMarker(true);
     moveToSecondSheet();
@@ -522,10 +526,22 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const moveToSecondSheet = useCallback(() => {
     firstBottomSheetRef.current?.close();
     setTimeout(() => {
+      console.log('🎬 MOVING TO SECOND SHEET');
+      console.log('📱 Setting activeSheet to "second"');
       setActiveSheet('second');
       secondBottomSheetRef.current?.expand();
+
+      // Check the state after a moment
+      setTimeout(() => {
+        console.log('🔍 STATE CHECK after moveToSecondSheet:', {
+          activeSheet: 'should be second',
+          showReportingMarker,
+          tempThreatData: !!tempThreatData,
+          draggedThreatLocation
+        });
+      }, 500);
     }, 300);
-  }, []);
+  }, [showReportingMarker, tempThreatData, draggedThreatLocation]);
 
   const moveToThirdSheet = useCallback(() => {
     setShowReportingMarker(true);
@@ -575,9 +591,21 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
 
   const handleThreatDragEnd = useCallback((event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
+
+    // 🔍 DEBUG: Log the dragged coordinates
+    console.log('🚚 THREAT DRAGGED - Final coordinates:', {
+      latitude,
+      longitude,
+      currentLocation: currentLocation,
+      difference: {
+        latDiff: Math.abs(latitude - currentLocation.latitude),
+        lngDiff: Math.abs(longitude - currentLocation.longitude)
+      }
+    });
+
     setDraggedThreatLocation({ latitude, longitude });
     setIsDraggingThreat(false);
-  }, []);
+  }, [currentLocation]);
 
   const closeCameraSheet = useCallback(() => {
     setShowCameraScreen(false); // Hide camera screen
@@ -605,51 +633,69 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
 
   // Modified to not redirect to SafeZone anymore
   const confirmThreatLocation = useCallback((additionalDetails?: string, image?: string) => {
-    if (draggedThreatLocation && tempThreatData) {
-      const now = new Date().toISOString();
 
-      const newThreat = {
-        id: Date.now(), // Temporary local ID
-        latitude: draggedThreatLocation.latitude,
-        longitude: draggedThreatLocation.longitude,
-        timestamp: now,
-        created_at: now,
-        description: additionalDetails || `${tempThreatData.label} reported`,
-        threat_type: tempThreatData.label,
-        report_type: tempThreatData.label.toLowerCase(),
-        image: image,
-        icon: tempThreatData.icon,
-        user: userData?.user?.id,
-      };
+    const finalCoords = draggedThreatRef.current || draggedThreatLocation || currentLocation;
 
-      // Add threat to current screen with temporary ID
-      setThreats(prevThreats => [...prevThreats, newThreat]);
+    console.log("🚀 FINAL THREAT COORDINATES:", finalCoords);
 
-      // Create the threat report in backend and update with real ID
-      createThreadZone(
-        newThreat.latitude,
-        newThreat.longitude,
-        newThreat.description,
-        newThreat.description,
-        newThreat.image,
-        newThreat.id // Pass the temporary ID for later updating
-      );
-
-      closeAllSheets();
-
-      // Animate to the new threat location
-      if (mapRef.current) {
-        setTimeout(() => {
-          mapRef.current.animateToRegion({
-            latitude: newThreat.latitude,
-            longitude: newThreat.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
-        }, 500);
-      }
+    if (!tempThreatData) {
+      console.warn("⚠ No threat type selected.");
+      return;
     }
-  }, [draggedThreatLocation, tempThreatData, closeAllSheets, userData?.user?.id]);
+
+    const now = new Date().toISOString();
+
+    const newThreat = {
+      id: Date.now(), // temporary client-side ID
+      latitude: finalCoords.latitude,
+      longitude: finalCoords.longitude,
+      timestamp: now,
+      created_at: now,
+      description: additionalDetails || `${tempThreatData.label} reported`,
+      threat_type: tempThreatData.label,
+      report_type: tempThreatData.label.toLowerCase(),
+      image,
+      icon: tempThreatData.icon,
+      user: userData?.user?.id,
+    };
+
+    console.log("📦 Creating Threat Object →", newThreat);
+
+    // Add instantly to UI
+    setThreats(prev => [...prev, newThreat]);
+
+    // Send to backend
+    createThreadZone(
+      finalCoords.latitude,
+      finalCoords.longitude,
+      newThreat.description,
+      newThreat.description,
+      newThreat.image,
+      newThreat.id
+    );
+
+    // Reset UI and close sheets
+    closeAllSheets();
+
+    // Center map on new threat
+    if (mapRef.current) {
+      setTimeout(() => {
+        mapRef.current.animateToRegion({
+          latitude: finalCoords.latitude,
+          longitude: finalCoords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }, 1000);
+      }, 500);
+    }
+
+  }, [
+    draggedThreatLocation,
+    tempThreatData,
+    userData?.user?.id,
+    currentLocation,
+    closeAllSheets
+  ]);
 
   const handleSheetChange = useCallback((index: number, sheetType: 'first' | 'second' | 'camera' | 'third') => {
     if (index === -1) {
@@ -731,45 +777,51 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       });
   };
 
-  // In your loadThreats function, update the threat mapping:
   const loadThreats = async () => {
     try {
       const response = await HomeAPIS.getThreatReports();
-      const threatMarkers = response?.data?.results?.map((item: any) => {
-        const isAutomated = item?.report_type === 'automated_alert' || item?.is_automated;
 
-        return {
-          id: item?.id,
-          realId: item?.id,
-          latitude: parseFloat(item?.latitude),
-          longitude: parseFloat(item?.longitude),
-          timestamp: item?.created_at,
-          created_at: item?.created_at,
-          description: item?.description || (isAutomated
-            ? "This is an automated alert triggered by a user's device, detecting signs of a potential threat or assault."
-            : 'Threat Location'),
-          threat_type: item?.report_type,
-          // UPDATED: Handle images properly
-          image: item?.photo_url || (item?.photo_urls?.length > 0 ? item.photo_urls[0] : null), // Original image
-          photo_urls: item?.photo_urls || [], // All photos (including original + additional)
-          icon: getThreatIcon(item?.report_type),
-          confirm_votes: item?.confirm_votes,
-          deny_votes: item?.deny_votes,
-          user_vote: isAutomated ? 'confirm' : item?.user_vote,
-          user: item?.user,
-          is_automated: isAutomated,
-        };
+      if (!response?.data?.results) return;
+
+      console.log("📍 API Threat Results Loaded:", response.data.results.length);
+
+      const normalizedThreats = response.data.results.map((item: any) => ({
+        id: item.id,
+        realId: item.id,
+        latitude: item.latitude ? parseFloat(item.latitude) : null,
+        longitude: item.longitude ? parseFloat(item.longitude) : null,
+        timestamp: item.created_at,
+        created_at: item.created_at,
+        description: item.description || "Threat reported",
+        threat_type: item.report_type,
+        image: item.photo_urls?.length > 0 ? item.photo_urls[0] : null,
+        photo_urls: item.photo_urls || [],
+        icon: getThreatIcon(item.report_type),
+        confirm_votes: item.confirm_votes,
+        deny_votes: item.deny_votes,
+        user_vote: item.user_vote,
+        user: item.user,
+        is_automated: item.report_type === "automated_alert"
+      }));
+
+      setThreats(prev => {
+        // Remove any temporary item that was replaced
+        const withoutConflictingTemp = prev.filter(
+          t => !normalizedThreats.some(newT => newT.id === t.id)
+        );
+
+        // Merge backend results with kept temp items
+        return [...withoutConflictingTemp, ...normalizedThreats];
       });
 
-      setThreats(prevThreats => {
-        const existingIds = prevThreats.map(t => t.id);
-        const newThreats = threatMarkers?.filter(t => !existingIds.includes(t.id)) || [];
-        return [...prevThreats, ...newThreats];
-      });
+      console.log("✅ Threat state updated after sync.");
+
     } catch (error) {
-      console.error('Error loading threat reports:', error);
+      console.error("❌ Error loading threat reports:", error);
     }
   };
+
+
 
 
   const createThreadZone = async (
@@ -839,10 +891,10 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         );
       }
 
-      // 4. Reload threats to get the complete data including any photos
-      setTimeout(() => {
-        loadThreats();
-      }, 1000);
+      // // 4. Reload threats to get the complete data including any photos
+      // setTimeout(() => {
+      //   loadThreats();
+      // }, 1000);
 
     } catch (error) {
       console.error('Error creating threat report:', error);
@@ -1126,27 +1178,29 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     }
   };
 
-  // SafeZone map interaction handlers
   const handleMapPress = useCallback((event) => {
     if (showTimeFilter) {
       setShowTimeFilter(false);
       return;
     }
 
-    // HeadsUp threat placement logic
+    // Only allow placement when selecting a threat type
     if (activeSheet === 'second' && showReportingMarker && tempThreatData) {
       const { latitude, longitude } = event.nativeEvent.coordinate;
-      setDraggedThreatLocation({ latitude, longitude });
-    }
 
-    // SafeZone placement logic
-    if (showSetSafeZonePopup && isSafeZoneCreationMode) { // Added isSafeZoneCreationMode check
-      const { latitude, longitude } = event.nativeEvent.coordinate;
-      setPendingMarkerLocation({ latitude, longitude });
-      setShowSetSafeZonePopup(false);
-      setShowConfirmationSheet(true);
+      console.log("📍 Map tapped. New Threat Coordinates:", { latitude, longitude });
+
+      // Store both state + ref
+      const newCoords = { latitude, longitude };
+      setDraggedThreatLocation(newCoords);
+      draggedThreatRef.current = newCoords;
     }
-  }, [activeSheet, showReportingMarker, tempThreatData, showSetSafeZonePopup, isSafeZoneCreationMode, showTimeFilter]);
+  }, [
+    activeSheet,
+    showReportingMarker,
+    tempThreatData,
+    showTimeFilter
+  ]);
 
   const handleConfirmSafeZone = async () => {
     if (pendingMarkerLocation) {

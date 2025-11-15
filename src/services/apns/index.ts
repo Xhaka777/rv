@@ -30,7 +30,6 @@ export class APNsService {
     }
 
     try {
-      console.log('🍎 Initializing pure APNs service...');
       
       // Request permissions first
       const permissionStatus = await this.requestPermissions();
@@ -111,7 +110,6 @@ export class APNsService {
     
     // Listen for device token registration
     PushNotificationIOS.addEventListener('register', async (token: string) => {
-      console.log('🍎 APNs device token received:', token.substring(0, 20) + '...');
       await this.saveTokenLocally(token);
       
       // Notify callback if exists
@@ -160,7 +158,6 @@ export class APNsService {
       }
       
       // Request fresh token
-      console.log('🍎 Requesting fresh APNs token...');
       PushNotificationIOS.requestPermissions();
       
       // Token will come via listener, return cached for now

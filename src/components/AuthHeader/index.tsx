@@ -72,11 +72,6 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
   childrenView,
 }) => {
 
-  // DEBUG: Log Apple button state
-  console.log('🍎 AuthHeader - isAppleBtn:', isAppleBtn);
-  console.log('🍎 AuthHeader - Platform.OS:', Platform.OS);
-  console.log('🍎 AuthHeader - onApplePress:', typeof onApplePress);
-
   return (
     <MainContainer
       customeStyle={{
@@ -156,12 +151,9 @@ export const AuthHeader: React.FC<AuthHeaderProps> = ({
                 {isAppleBtn && Platform.OS === 'ios' && (
                   <SecondaryButton
                     onPress={() => {
-                      console.log('🍎 Apple button pressed in AuthHeader');
-                      console.log('🍎 onApplePress function:', onApplePress);
                       if (onApplePress) {
                         onApplePress();
                       } else {
-                        console.log('🍎 ERROR: onApplePress is not defined!');
                       }
                     }}
                     title={t('Continue with Apple')}

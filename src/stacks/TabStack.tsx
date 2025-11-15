@@ -127,11 +127,6 @@ export const TabStack: React.FC = () => {
   const isVideoMode = cameraMode === 'VIDEO';
   const isOnLiveStreamTab = currentTabName === 'LiveStream';
 
-  console.log('TabStack - cameraMode:', cameraMode);
-  console.log('TabStack - isVideoMode calculation:', cameraMode === 'VIDEO');
-  console.log('TabStack - currentTabName:', currentTabName);
-  console.log('TabStack - isOnLiveStreamTab:', isOnLiveStreamTab);
-
   // Voice UI states
   const [showVoiceUI, setShowVoiceUI] = useState(false);
   const [voiceUIState, setVoiceUIState] = useState<'listening' | 'processing' | 'detected'>('listening');
@@ -161,12 +156,7 @@ export const TabStack: React.FC = () => {
     const minutes = parseInt(timer.replace('m', ''));
     return minutes * 60 * 1000;
   };
-
-  console.log('TabStack - currentTabName:', currentTabName);
-  console.log('TabStack - cameraMode:', cameraMode);
-  console.log('TabStack - isOnLiveStreamTab:', isOnLiveStreamTab);
-  console.log('TabStack - isVideoMode:', isVideoMode);
-
+  
   const startArmingTimer = useCallback(() => {
     if (armingTimerId) {
       clearTimeout(armingTimerId);

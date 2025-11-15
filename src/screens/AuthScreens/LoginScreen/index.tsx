@@ -55,18 +55,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
   }, []);
 
   const checkAppleSignInSupport = () => {
-    console.log('🍎 Checking Apple Sign-In support...');
-    console.log('Platform:', Platform.OS);
-    console.log('Platform Version:', Platform.Version);
 
     if (Platform.OS === 'ios') {
-      console.log('🍎 iOS detected, checking Apple Auth availability...');
-      console.log('Apple Auth object:', appleAuth);
-      console.log('Apple Auth isSupported:', appleAuth.isSupported);
-      console.log('Apple Auth Operation:', appleAuth.Operation);
-      console.log('Apple Auth Scope:', appleAuth.Scope);
     } else {
-      console.log('🍎 Not iOS, Apple Sign-In not supported');
     }
   };
 
@@ -244,27 +235,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
 
   // FIXED: Proper Apple Sign-In support check
   const isAppleSignInSupported = () => {
-    console.log('🍎 isAppleSignInSupported called');
     const supported = Platform.OS === 'ios' && appleAuth.isSupported;
-    console.log('🍎 Apple Sign-In supported:', supported);
     return supported;
   };
 
   // FIXED: Proper Apple Sign-In implementation
   const handleAppleLogin = async () => {
-    console.log('🍎 Apple login button pressed');
 
     if (!isAppleSignInSupported()) {
-      console.log('🍎 Apple Sign-In not supported');
       Utills.showToast('Apple Sign-In is only available on iOS 13 and later');
       return;
     }
 
-    console.log('🍎 Starting Apple Sign-In process...');
     setLoading(true);
 
     try {
-      console.log('🍎 Calling appleAuth.performRequest...');
 
       // Perform the Apple Sign-In request
       const appleAuthRequestResponse = await appleAuth.performRequest({
@@ -272,11 +257,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
         requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
       });
 
-      console.log('🍎 Apple Auth Response:', JSON.stringify(appleAuthRequestResponse, null, 2));
 
       // Check if the response is valid
       if (!appleAuthRequestResponse.identityToken) {
-        console.log('🍎 No identity token received');
         setLoading(false);
         Utills.showToast('Apple Sign-In failed: No identity token received');
         return;
@@ -284,11 +267,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
 
       // Extract user data from Apple response
       const { identityToken, user, email, fullName } = appleAuthRequestResponse;
-
-      console.log('🍎 Identity Token:', identityToken);
-      console.log('🍎 User:', user);
-      console.log('🍎 Email:', email);
-      console.log('🍎 Full Name:', fullName);
 
       // Send to backend
       const appleAuthData = {
@@ -301,19 +279,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
         },
       };
 
-      console.log('🍎 Sending to backend:', JSON.stringify(appleAuthData, null, 2));
       postAppleCred(appleAuthData);
 
     } catch (error: any) {
-      console.log('🍎 Apple Sign-In Error:', error);
-      console.log('🍎 Error message:', error.message);
-      console.log('🍎 Error code:', error.code);
 
       setLoading(false);
 
       // Handle specific error codes
       if (error.code === appleAuth.Error.CANCELED) {
-        console.log('🍎 User canceled Apple Sign-In');
         // Don't show error for user cancellation
         return;
       }
@@ -323,8 +296,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
   };
 
   const postAppleCred = (appleData: any) => {
-    console.log('🍎 Posting Apple credentials to backend...');
-
     // Fix: Convert camelCase to snake_case for backend
     const backendData = {
       identity_token: appleData.identityToken,  // Changed from identityToken to identity_token
@@ -333,11 +304,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
       full_name: appleData.fullName,  // Also consider if backend expects full_name
     };
 
-    console.log('🍎 Sending to backend (corrected):', JSON.stringify(backendData, null, 2));
 
     AuthAPIS.appleLogin(backendData)
       .then(res => {
-        console.log('🍎 Backend response:', JSON.stringify(res?.data, null, 2));
 
         const userData = res?.data?.data;
         const firstLogin = !isFirstTime;
@@ -359,8 +328,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ }) => {
         }
       })
       .catch(err => {
-        console.log('🍎 Backend error:', err);
-        console.log('🍎 Backend error response:', err?.response?.data);
 
         Utills.showToast(err?.response?.data?.errors?.[0]?.message || 'Apple Sign-In backend error');
         setLoading(false);
