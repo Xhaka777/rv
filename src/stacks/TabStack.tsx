@@ -254,7 +254,7 @@ export const TabStack: React.FC = () => {
         // Show notification instead of modal
         onDisplayNotification(
           'Siri access blocked',
-          'Siri voice activation won\'t work while Rove is active. This is because Rove needs exclusive access to the microphone for threat detection.'
+          'Siri voice activation won’t work while Rove is active. Hold the side button to activate Siri'
         );
       } else {
         // App is active - show modal as before
