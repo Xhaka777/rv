@@ -1437,8 +1437,6 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     }
   };
 
-
-
   const startAndStopStream = async () => {
     console.log('🎬 [DEBUG] startAndStopStream called');
     console.log('🎬 [DEBUG] isStreaming:', isStreaming);

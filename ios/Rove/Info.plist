@@ -80,6 +80,8 @@
 	<string>$(PRODUCT_NAME) needs access to your Camera so you can talk with your teacher.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>$(PRODUCT_NAME) would like to access your contacts to show contacts in the app</string>
+	<key>NSContactsFullAccessUsageDescription</key>
+	<string>$(PRODUCT_NAME) needs full access to your contacts to add trusted responders for emergency notifications.</string>
 	<key>NSFileProviderDomainUsageDescription</key>
 	<string></string>
 	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>

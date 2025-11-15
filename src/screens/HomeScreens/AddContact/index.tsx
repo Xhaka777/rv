@@ -343,35 +343,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: Metrix.VerticalSize(10),
   },
-
-  // Service selection styles - COMMENTED OUT BUT KEPT FOR REFERENCE
-  // serviceSection: {
-  //   marginBottom: Metrix.VerticalSize(20),
-  // },
-  // sectionTitle: {
-  //   marginBottom: Metrix.VerticalSize(10),
-  // },
-  // serviceRow: {
-  //   flexDirection: 'row',
-  //   gap: Metrix.HorizontalSize(15),
-  // },
-  // serviceButton: {
-  //   width: Metrix.HorizontalSize(60),
-  //   height: Metrix.VerticalSize(55),
-  //   alignItems: 'center',
-  //   justifyContent: 'center',
-  //   borderRadius: Metrix.HorizontalSize(10),
-  //   borderWidth: 1,
-  //   borderColor: 'transparent',
-  // },
-  // serviceButtonSelected: {
-  //   borderColor: '#4ade80',
-  // },
-  // serviceIcon: {
-  //   width: Metrix.HorizontalSize(42),
-  //   height: Metrix.HorizontalSize(42),
-  // },
-
   // Search and contacts section
   contactsSection: {
     flex: 1,

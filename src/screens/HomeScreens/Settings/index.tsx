@@ -438,19 +438,6 @@ export const Settings: React.FC<SettingsProps> = ({ }) => {
             keyExtractor={item => item?.id}
           />
         </View>
-
-        {/* Choose Model Section - Added from old code */}
-        <View style={styles.modelSelectionContainer}>
-          <CustomText.RegularText
-            customStyle={styles.chooseModelText}>
-            Choose Model
-          </CustomText.RegularText>
-          <CustomText.SmallText
-            onPress={genderSelection}
-            customStyle={styles.genderTxt}>
-            {model}
-          </CustomText.SmallText>
-        </View>
       </View>
 
       <TextInputAlert
