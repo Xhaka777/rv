@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
         backgroundColor: Utills.selectedThemeColors().Base,
         flex: 1,
         paddingVertical: Metrix.VerticalSize(20),
+        paddingHorizontal: Metrix.HorizontalSize(15),
     },
     scrollContent: {
         paddingBottom: Metrix.VerticalSize(30),
