@@ -77,7 +77,7 @@ const encryptCoordinatesBase64 = (lat, lng) => {
     .replace(/=/g, '');
 };
 
-// NEW: Image Gallery Modal Component
+// Image Gallery Modal Component with Blurry Background
 const ImageGalleryModal = ({ 
   visible, 
   images, 
@@ -169,61 +169,75 @@ const ImageGalleryModal = ({
           </View>
         </View>
 
-        <View style={styles.galleryImageContainer}>
-          {images.length > 1 && (
-            <TouchableOpacity
-              style={[styles.galleryNavButton, styles.galleryNavLeft]}
-              onPress={handlePrevious}
-            >
-              <ChevronLeft size={30} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
-
+        {/* Combined container for image and thumbnails with unified background */}
+        <View style={styles.galleryContentContainer}>
+          {/* Blurry zoomed background image */}
           <Image
             source={{ uri: currentImage.uri }}
-            style={styles.galleryImage}
-            resizeMode="contain"
+            style={styles.galleryBackgroundImage}
+            resizeMode="cover"
+            blurRadius={40}
           />
+          
+          {/* Dark overlay for better contrast */}
+          <View style={styles.galleryBackgroundOverlay} />
+          
+          <View style={styles.galleryImageContainer}>
+            {images.length > 1 && (
+              <TouchableOpacity
+                style={[styles.galleryNavButton, styles.galleryNavLeft]}
+                onPress={handlePrevious}
+              >
+                <ChevronLeft size={30} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
 
+            <Image
+              source={{ uri: currentImage.uri }}
+              style={styles.galleryImage}
+              resizeMode="contain"
+            />
+
+            {images.length > 1 && (
+              <TouchableOpacity
+                style={[styles.galleryNavButton, styles.galleryNavRight]}
+                onPress={handleNext}
+              >
+                <ChevronRight size={30} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Thumbnail strip */}
           {images.length > 1 && (
-            <TouchableOpacity
-              style={[styles.galleryNavButton, styles.galleryNavRight]}
-              onPress={handleNext}
-            >
-              <ChevronRight size={30} color="#FFFFFF" />
-            </TouchableOpacity>
+            <View style={styles.thumbnailContainer}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.thumbnailScrollContent}
+              >
+                {images.map((img, index) => (
+                  <TouchableOpacity
+                    key={img.id}
+                    style={[
+                      styles.thumbnail,
+                      currentIndex === index && styles.activeThumbnail
+                    ]}
+                    onPress={() => setCurrentIndex(index)}
+                  >
+                    <Image
+                      source={{ uri: img.uri }}
+                      style={styles.thumbnailImage}
+                    />
+                    {currentIndex === index && (
+                      <View style={styles.thumbnailOverlay} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           )}
         </View>
-
-        {/* Thumbnail strip */}
-        {images.length > 1 && (
-          <View style={styles.thumbnailContainer}>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.thumbnailScrollContent}
-            >
-              {images.map((img, index) => (
-                <TouchableOpacity
-                  key={img.id}
-                  style={[
-                    styles.thumbnail,
-                    currentIndex === index && styles.activeThumbnail
-                  ]}
-                  onPress={() => setCurrentIndex(index)}
-                >
-                  <Image
-                    source={{ uri: img.uri }}
-                    style={styles.thumbnailImage}
-                  />
-                  {currentIndex === index && (
-                    <View style={styles.thumbnailOverlay} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
       </SafeAreaView>
     </Modal>
   );
@@ -251,7 +265,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [modalOpenTime, setModalOpenTime] = useState<Date | null>(null);
     
-    // NEW: Image gallery modal state
+    // Image gallery modal state
     const [showImageGallery, setShowImageGallery] = useState(false);
     const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
@@ -609,19 +623,19 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       }
     };
 
-    // NEW: Handle opening image gallery
+    // Handle opening image gallery
     const handleImagePress = (imageIndex: number) => {
       setGalleryInitialIndex(imageIndex);
       setShowImageGallery(true);
     };
 
-    // NEW: Handle more images tap
+    // Handle more images tap
     const handleMoreImagesPress = () => {
       setGalleryInitialIndex(0);
       setShowImageGallery(true);
     };
 
-    // NEW: Enhanced image layout with gallery support
+    // Enhanced image layout with gallery support
     const renderImageLayout = () => {
       const canDeleteImages = isUserOwnThreat();
 
@@ -719,7 +733,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         );
       }
 
-      // For 3+ images - ENHANCED with gallery access
+      // For 3+ images - with gallery access
       const mainImage = images[0];
       const sideImage = images[1];
       const remainingCount = images.length - 2;
@@ -1014,7 +1028,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           </BottomSheetView>
         </BottomSheet>
 
-        {/* NEW: Image Gallery Modal */}
+        {/* Image Gallery Modal with Blurry Background */}
         <ImageGalleryModal
           visible={showImageGallery}
           images={images}
@@ -1388,19 +1402,21 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 
-  // NEW: Image Gallery Modal Styles
+  // Image Gallery Modal Styles with Blurry Background - FIXED
   galleryModalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: '#000000',
   },
   galleryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 10,
   },
   galleryHeaderLeft: {
     flex: 1,
@@ -1431,16 +1447,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // NEW: Combined content container for unified background
+  galleryContentContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    position: 'relative',
+  },
   galleryImageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
+  // Updated: Background image to cover entire content area
+  galleryBackgroundImage: {
+    position: 'absolute',
+    width: screenWidth * 1.2,
+    height: '100%',
+    top: 0,
+    left: -(screenWidth * 0.1),
+  },
+  galleryBackgroundOverlay: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  // Updated: Full-width image
   galleryImage: {
     width: screenWidth,
     height: screenHeight * 0.6,
     resizeMode: 'contain',
+    zIndex: 1,
   },
   galleryNavButton: {
     position: 'absolute',
@@ -1458,10 +1496,12 @@ const styles = StyleSheet.create({
   galleryNavRight: {
     right: 20,
   },
+  // Updated: Remove separate background from thumbnail container
   thumbnailContainer: {
     paddingVertical: 15,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 10,
   },
   thumbnailScrollContent: {
     paddingHorizontal: 20,
@@ -1476,7 +1516,7 @@ const styles = StyleSheet.create({
   },
   activeThumbnail: {
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: 'rgba(42, 50, 57, 0.3)',
   },
   thumbnailImage: {
     width: '100%',
@@ -1489,7 +1529,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 122, 255, 0.3)',
+    backgroundColor: 'rgba(42, 50, 57, 0.3)',
   },
 });
 

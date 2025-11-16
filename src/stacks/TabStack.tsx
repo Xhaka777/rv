@@ -156,7 +156,7 @@ export const TabStack: React.FC = () => {
     const minutes = parseInt(timer.replace('m', ''));
     return minutes * 60 * 1000;
   };
-  
+
   const startArmingTimer = useCallback(() => {
     if (armingTimerId) {
       clearTimeout(armingTimerId);
@@ -812,30 +812,28 @@ export const TabStack: React.FC = () => {
     const iconSize = getIconSize(item?.name);
     const showAlert = item?.name === 'HeadsUp' && threatAlertMode && hasThreatsInRadius;
 
-    // 🔥 NEW: Show interruption indicator
-    const showInterruptionAlert = isAudioServicesSuspended && ['HeadsUp', 'LiveStream'].includes(item?.name);
-
     return (
       <View style={styles.tabIconContainer}>
         <Image
           source={focused ? item?.active : item?.inActive}
           resizeMode="contain"
           style={{
-            tintColor: showInterruptionAlert ? '#FF8800' : color,
+            tintColor: color,
             width: Metrix.HorizontalSize(iconSize.width),
             height: Metrix.VerticalSize(iconSize.height),
           }}
         />
-        {(showAlert || showInterruptionAlert) && (
-          <View style={[styles.alertIndicator, { backgroundColor: showInterruptionAlert ? '#FF8800' : '#FF3B30' }]}>
+        {showAlert && (
+          <View style={styles.alertIndicator}>
             <CustomText.SmallText customStyle={styles.alertText}>
-              {showInterruptionAlert ? '⏸' : '!'}
+              !
             </CustomText.SmallText>
           </View>
         )}
       </View>
     );
   };
+
 
   return (
     <>

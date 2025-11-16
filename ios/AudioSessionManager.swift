@@ -933,7 +933,7 @@ class AudioSessionManager: RCTEventEmitter {
         _ resolve: @escaping RCTPromiseResolveBlock,
         rejecter reject: @escaping RCTPromiseRejectBlock
     ) {
-        print("⏸️ MANUAL: Pausing all services for Siri...")
+        print("MANUAL: Pausing all services for Siri...")
         
         do {
             wasPausedForSiri = true
@@ -1119,7 +1119,7 @@ class AudioSessionManager: RCTEventEmitter {
         isPaused = true
         stopRecordingTimer()
         sendMicrophoneStatusEvent(isActive: false, reason: "recording_paused")
-        print("⏸️ [AUDIO_SESSION] Recording paused")
+        print("[AUDIO_SESSION] Recording paused")
     }
     
     private func resumeRecordingInternal() {
