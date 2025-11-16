@@ -631,12 +631,11 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     setCapturedThreatPhoto(null);
   }, []);
 
-  // Modified to not redirect to SafeZone anymore
   const confirmThreatLocation = useCallback((additionalDetails?: string, image?: string) => {
-
     const finalCoords = draggedThreatRef.current || draggedThreatLocation || currentLocation;
 
     console.log("🚀 FINAL THREAT COORDINATES:", finalCoords);
+    console.log("📝 RECEIVED DESCRIPTION:", additionalDetails); // Add this log
 
     if (!tempThreatData) {
       console.warn("⚠ No threat type selected.");
@@ -645,13 +644,18 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
 
     const now = new Date().toISOString();
 
+    // Use the provided description if available, otherwise use fallback
+    const threatDescription = additionalDetails && additionalDetails.trim()
+      ? additionalDetails.trim()
+      : `${tempThreatData.label} reported`;
+
     const newThreat = {
       id: Date.now(), // temporary client-side ID
       latitude: finalCoords.latitude,
       longitude: finalCoords.longitude,
       timestamp: now,
       created_at: now,
-      description: additionalDetails || `${tempThreatData.label} reported`,
+      description: threatDescription, // ← Use the properly determined description
       threat_type: tempThreatData.label,
       report_type: tempThreatData.label.toLowerCase(),
       image,
@@ -664,12 +668,12 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     // Add instantly to UI
     setThreats(prev => [...prev, newThreat]);
 
-    // Send to backend
+    // Send to backend with the correct description
     createThreadZone(
       finalCoords.latitude,
       finalCoords.longitude,
-      newThreat.description,
-      newThreat.description,
+      threatDescription, // ← Use the actual description here
+      threatDescription, // ← And here too
       newThreat.image,
       newThreat.id
     );
@@ -688,7 +692,6 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         }, 1000);
       }, 500);
     }
-
   }, [
     draggedThreatLocation,
     tempThreatData,

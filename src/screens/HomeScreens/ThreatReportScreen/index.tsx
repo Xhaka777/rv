@@ -390,9 +390,21 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
       setIsListening(false);
     }
 
-    const userMessage = messages.find(msg => !msg.isBot && (msg.text.length > 0 || msg.image));
-    const userText = userMessage?.text || inputText.trim(); // Also check current input
-    const userImage = userMessage?.image || selectedImage; // Also check current selected image
+    // Get the user's text content - prioritize current input, then look for existing messages
+    let userText = inputText.trim();
+
+    // If no current input, look for existing user messages
+    if (!userText) {
+      const userMessage = messages.find(msg => !msg.isBot && msg.text.length > 0);
+      userText = userMessage?.text || '';
+    }
+
+    // Get the user's image - prioritize selected image, then look for existing messages
+    let userImage = selectedImage;
+    if (!userImage) {
+      const userMessageWithImage = messages.find(msg => !msg.isBot && msg.image);
+      userImage = userMessageWithImage?.image;
+    }
 
     const hasImage = !!userImage;
     const hasText = userText.length > 0;
@@ -431,6 +443,7 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
       setShowSuccessLoader(true);
 
       setTimeout(() => {
+        // Pass the correct user text and image to onComplete
         onComplete(userText, userImage);
         navigation.goBack();
       }, 1200);

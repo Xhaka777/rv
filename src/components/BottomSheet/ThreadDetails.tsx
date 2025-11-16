@@ -88,7 +88,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [modalOpenTime, setModalOpenTime] = useState<Date | null>(null);
 
-    // console.log('threatDetails', threatDetails);
+    console.log('threatDetails', threatDetails);
     // console.log('currentUserId', currentUserId);
     // console.log('threat user ID', threatDetails?.user);
 
