@@ -1,15 +1,27 @@
 import React, { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, Share } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  Alert, 
+  Dimensions, 
+  Share, 
+  Modal, 
+  ScrollView, 
+  SafeAreaView,
+  StatusBar
+} from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 // import { GOOGLE_API_KEY } from '../../services/config';
 import Geocoder from 'react-native-geocoding';
 import { HomeAPIS } from '../../services/home';
 import ImagePicker from 'react-native-image-crop-picker';
-import { Camera, Plus, Share as ShareIcon, Trash2, X } from 'lucide-react-native';
+import { Camera, Plus, Share as ShareIcon, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import base64 from 'base-64';
 
-
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // Geocoder.init(GOOGLE_API_KEY);
 
@@ -25,7 +37,7 @@ interface ThreatDetails {
   label: string;
   streetName: string;
   image?: string;
-  photo_urls?: string[]; // Add this field
+  photo_urls?: string[];
   timestamp: string;
   description?: string;
   latitude: number;
@@ -44,7 +56,7 @@ interface ThreatDetailsBottomSheetProps {
   onChange: (index: number) => void;
   onConfirm?: (threatId: string) => void;
   onDeny?: (threatId: string) => void;
-  onImageAdded?: (threatId: string, response: any) => void; // Updated signature
+  onImageAdded?: (threatId: string, response: any) => void;
   isOwnThreat?: boolean;
   onDelete?: (threatId: string) => void;
   userCoordinates?: { latitude: number; longitude: number };
@@ -62,9 +74,160 @@ const encryptCoordinatesBase64 = (lat, lng) => {
   return base64.encode(obfuscated)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
-    .replace(/=/g, ''); // Remove padding for shorter URLs
+    .replace(/=/g, '');
 };
 
+// NEW: Image Gallery Modal Component
+const ImageGalleryModal = ({ 
+  visible, 
+  images, 
+  initialIndex = 0, 
+  onClose, 
+  onDeleteImage,
+  canDeleteImages = false 
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [imageViewSize, setImageViewSize] = useState({ width: screenWidth, height: screenHeight * 0.7 });
+
+  useEffect(() => {
+    if (visible) {
+      setCurrentIndex(initialIndex);
+    }
+  }, [visible, initialIndex]);
+
+  const handlePrevious = () => {
+    setCurrentIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+  };
+
+  const handleDeleteCurrent = () => {
+    const currentImage = images[currentIndex];
+    if (!currentImage) return;
+
+    Alert.alert(
+      'Delete Image',
+      currentImage.id === 'original' 
+        ? 'Cannot delete the original threat image'
+        : 'Are you sure you want to delete this image?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            if (currentImage.id !== 'original') {
+              onDeleteImage(currentImage.id);
+              // Adjust current index if we deleted the last image
+              if (currentIndex >= images.length - 1) {
+                setCurrentIndex(Math.max(0, images.length - 2));
+              }
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  if (!visible || images.length === 0) return null;
+
+  const currentImage = images[currentIndex];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <StatusBar backgroundColor="rgba(0,0,0,0.95)" barStyle="light-content" />
+      <SafeAreaView style={styles.galleryModalContainer}>
+        <View style={styles.galleryHeader}>
+          <View style={styles.galleryHeaderLeft}>
+            <Text style={styles.galleryCounter}>
+              {currentIndex + 1} of {images.length}
+            </Text>
+          </View>
+          
+          <View style={styles.galleryHeaderRight}>
+            {canDeleteImages && currentImage.id !== 'original' && (
+              <TouchableOpacity
+                style={styles.galleryDeleteButton}
+                onPress={handleDeleteCurrent}
+              >
+                <Trash2 size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.galleryCloseButton}
+              onPress={onClose}
+            >
+              <X size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.galleryImageContainer}>
+          {images.length > 1 && (
+            <TouchableOpacity
+              style={[styles.galleryNavButton, styles.galleryNavLeft]}
+              onPress={handlePrevious}
+            >
+              <ChevronLeft size={30} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+
+          <Image
+            source={{ uri: currentImage.uri }}
+            style={styles.galleryImage}
+            resizeMode="contain"
+          />
+
+          {images.length > 1 && (
+            <TouchableOpacity
+              style={[styles.galleryNavButton, styles.galleryNavRight]}
+              onPress={handleNext}
+            >
+              <ChevronRight size={30} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Thumbnail strip */}
+        {images.length > 1 && (
+          <View style={styles.thumbnailContainer}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.thumbnailScrollContent}
+            >
+              {images.map((img, index) => (
+                <TouchableOpacity
+                  key={img.id}
+                  style={[
+                    styles.thumbnail,
+                    currentIndex === index && styles.activeThumbnail
+                  ]}
+                  onPress={() => setCurrentIndex(index)}
+                >
+                  <Image
+                    source={{ uri: img.uri }}
+                    style={styles.thumbnailImage}
+                  />
+                  {currentIndex === index && (
+                    <View style={styles.thumbnailOverlay} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </SafeAreaView>
+    </Modal>
+  );
+};
 
 const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomSheetProps>(
   ({
@@ -87,10 +250,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const [showDeleteButton, setShowDeleteButton] = useState(false);
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [modalOpenTime, setModalOpenTime] = useState<Date | null>(null);
-
-    console.log('threatDetails', threatDetails);
-    // console.log('currentUserId', currentUserId);
-    // console.log('threat user ID', threatDetails?.user);
+    
+    // NEW: Image gallery modal state
+    const [showImageGallery, setShowImageGallery] = useState(false);
+    const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
 
     const getThreatTypeName = (label: string) => {
       const threatTypes = {
@@ -111,17 +274,14 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const getRealThreatId = useCallback(() => {
       if (!threatDetails) return null;
 
-      // If the id looks like a UUID (contains dashes), use it
       if (threatDetails.id.includes('-')) {
         return threatDetails.id;
       }
 
-      // If we have a realId field, use that
       if (threatDetails.realId) {
         return threatDetails.realId;
       }
 
-      // Log warning if we only have timestamp ID
       console.warn('⚠️ No real UUID found for threat, using timestamp ID:', threatDetails.id);
       return threatDetails.id;
     }, [threatDetails]);
@@ -132,7 +292,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       return threatDetails.user === currentUserId;
     }, [threatDetails, currentUserId]);
 
-    // Calculate time since threat creation (using created_at if available, fallback to timestamp)
+    // Calculate time since threat creation
     const calculateTimeSinceCreation = useCallback(() => {
       if (!threatDetails) return Infinity;
 
@@ -143,7 +303,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       const threatTime = new Date(creationTime);
       const timeDiff = now.getTime() - threatTime.getTime();
 
-      return timeDiff; // Returns milliseconds since creation
+      return timeDiff;
     }, [threatDetails]);
 
     // Check if within 5 minute window
@@ -172,20 +332,11 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       const isOwnThreat = isUserOwnThreat();
       const withinTimeLimit = isWithin5Minutes();
 
-      // console.log('Delete button check:', {
-      //   isOwnThreat,
-      //   withinTimeLimit,
-      //   timeSinceCreation: calculateTimeSinceCreation(),
-      //   threatUser: threatDetails.user,
-      //   currentUser: currentUserId
-      // });
-
       if (isOwnThreat && withinTimeLimit) {
         setModalOpenTime(new Date());
         setShowDeleteButton(true);
         setTimeRemaining(calculateTimeRemaining());
 
-        // Update countdown every second
         const interval = setInterval(() => {
           const remaining = calculateTimeRemaining();
           setTimeRemaining(remaining);
@@ -219,17 +370,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
             style: 'destructive',
             onPress: async () => {
               try {
-                // Call your delete API here if you have one
                 await HomeAPIS.deleteThreatReport(threatDetails.id);
-
                 onDelete?.(threatDetails.id);
                 onClose();
-
-                Alert.alert(
-                  'Deleted',
-                  'Threat report has been deleted successfully.',
-                  [{ text: 'OK' }]
-                );
+                Alert.alert('Deleted', 'Threat report has been deleted successfully.', [{ text: 'OK' }]);
               } catch (error) {
                 console.error('Error deleting threat report:', error);
                 Alert.alert('Error', 'Failed to delete threat report. Please try again.');
@@ -245,9 +389,8 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
       try {
         const threatTypeName = getThreatTypeName(threatDetails.label);
-
-        // Format date and time
         const date = new Date(threatDetails.timestamp);
+        
         const dateOptions: Intl.DateTimeFormatOptions = {
           weekday: 'long',
           day: 'numeric',
@@ -260,10 +403,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           minute: '2-digit',
           hour12: false
         };
+        
         const formattedDate = date.toLocaleDateString('en-GB', dateOptions);
         const formattedTime = date.toLocaleTimeString('en-GB', timeOptions);
 
-        // Get timezone abbreviation with fallback
         let tzAbbr = 'UTC';
         try {
           const tzString = date.toLocaleTimeString('en-US', { timeZoneName: 'short' });
@@ -273,18 +416,9 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           console.error('Error getting timezone:', e);
         }
 
-        // Generate encrypted URL with specific threat coordinates
-        const encrypted = encryptCoordinatesBase64(
-          threatDetails.latitude,
-          threatDetails.longitude
-        );
-        console.log('threatDetails.latitude', threatDetails.latitude)
-        console.log('threatDetails.longitude', threatDetails.longitude)
-        console.log('encrypted', encrypted)
-
+        const encrypted = encryptCoordinatesBase64(threatDetails.latitude, threatDetails.longitude);
         const threatUrl = `https://map.rovesafe.com/${encrypted}`;
 
-        // Format the share message with Unicode bold text
         const shareMessage = `${threatTypeName} 𝗔𝗹𝗲𝗿𝘁\n` +
           `${formattedDate}, ${formattedTime} (${tzAbbr})\n` +
           `𝗪𝗵𝗲𝗿𝗲: View this threat - ${threatUrl}\n` +
@@ -292,17 +426,11 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           `𝗔𝗱𝘃𝗶𝗰𝗲: Avoid the area if possible. Stay aware, follow local guidance, and check the map for updates.\n` +
           `𝗦𝘁𝗮𝘁𝘂𝘀: Community report - not yet verified.`;
 
-        // Share with the encrypted URL
         const result = await Share.share(
-          {
-            message: shareMessage,
-          },
-          {
-            dialogTitle: `${threatTypeName} Alert`,
-          }
+          { message: shareMessage },
+          { dialogTitle: `${threatTypeName} Alert` }
         );
 
-        // Handle the result
         if (result.action === Share.sharedAction) {
           if (result.activityType) {
             console.log(`Shared via: ${result.activityType}`);
@@ -324,7 +452,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         setIsLoadingVoteStatus(true);
 
         if (threatDetails?.is_automated) {
-          setConfirmationStatus('confirmed'); // Always confirmed for automated
+          setConfirmationStatus('confirmed');
           setIsLoadingVoteStatus(false);
           return;
         }
@@ -362,7 +490,6 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       setConfirmationStatus('unconfirmed');
       fetchUserVoteStatus(threatDetails.id);
 
-      // UPDATED: Load all photos from photo_urls, not just the single image
       if (threatDetails.photo_urls && threatDetails.photo_urls.length > 0) {
         const allImages = threatDetails.photo_urls.map((url, index) => ({
           id: index === 0 ? 'original' : `photo_${index}`,
@@ -370,7 +497,6 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         }));
         setImages(allImages);
       } else if (threatDetails.image) {
-        // Fallback to single image if photo_urls not available
         setImages([{
           id: 'original',
           uri: threatDetails.image
@@ -388,19 +514,16 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
     const handleAddImage = () => {
       if (!threatDetails) return;
-
-      // Directly open the image picker without showing an alert
       selectImageFromLibrary();
     };
 
-    // Keep your existing selectImageFromLibrary function as is
     const selectImageFromLibrary = () => {
       ImagePicker.openPicker({
-        cropping: false, // No cropping - keep original aspect ratio
+        cropping: false,
         mediaType: 'photo',
         compressImageQuality: 0.8,
-        maxWidth: 1920, // Reasonable max width
-        maxHeight: 1920, // Reasonable max height
+        maxWidth: 1920,
+        maxHeight: 1920,
         includeBase64: false,
         includeExif: false,
       }).then(image => {
@@ -427,18 +550,13 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
     const removeImage = (imageId: string) => {
       if (imageId === 'original') {
-        Alert.alert(
-          'Cannot Remove',
-          'Cannot remove the original threat image',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Cannot Remove', 'Cannot remove the original threat image', [{ text: 'OK' }]);
         return;
       }
 
       setImages(prevImages => prevImages.filter(img => img.id !== imageId));
     };
 
-    // NEW: Updated uploadAdditionalImage function to use the new PATCH API
     const uploadAdditionalImage = async (imageUri: string) => {
       if (!threatDetails) return;
 
@@ -461,21 +579,13 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
 
       try {
         setIsUploadingImage(true);
-
         console.log('📸 Adding photo to threat ID:', realThreatId);
-        console.log('[imageUri]', [imageUri])
 
         const response = await HomeAPIS.addPhotosToThreatReport(threatDetails.id, [imageUri]);
-
         console.log('📸 Photo added successfully:', response.data);
 
-        Alert.alert(
-          'Success',
-          'Additional image has been added to the threat report.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Success', 'Additional image has been added to the threat report.', [{ text: 'OK' }]);
 
-        // UPDATED: Call onImageAdded with the full response
         if (onImageAdded) {
           onImageAdded(realThreatId, response.data);
         }
@@ -499,9 +609,21 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       }
     };
 
+    // NEW: Handle opening image gallery
+    const handleImagePress = (imageIndex: number) => {
+      setGalleryInitialIndex(imageIndex);
+      setShowImageGallery(true);
+    };
+
+    // NEW: Handle more images tap
+    const handleMoreImagesPress = () => {
+      setGalleryInitialIndex(0);
+      setShowImageGallery(true);
+    };
+
+    // NEW: Enhanced image layout with gallery support
     const renderImageLayout = () => {
-      // Always show add photo card alongside existing images
-      const showAddPhotoCard = true;
+      const canDeleteImages = isUserOwnThreat();
 
       if (images.length === 0) {
         return (
@@ -520,8 +642,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         return (
           <View style={styles.twoImagesContainer}>
             <View style={styles.mainImageContainer}>
-              <Image source={{ uri: images[0].uri }} style={styles.mainImage} />
-              {images[0].id !== 'original' && (
+              <TouchableOpacity onPress={() => handleImagePress(0)}>
+                <Image source={{ uri: images[0].uri }} style={styles.mainImage} />
+              </TouchableOpacity>
+              {images[0].id !== 'original' && canDeleteImages && (
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => removeImage(images[0].id)}
@@ -552,8 +676,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         return (
           <View style={styles.multipleImagesContainer}>
             <View style={styles.mainImageContainer}>
-              <Image source={{ uri: images[0].uri }} style={styles.mainImage} />
-              {images[0].id !== 'original' && (
+              <TouchableOpacity onPress={() => handleImagePress(0)}>
+                <Image source={{ uri: images[0].uri }} style={styles.mainImage} />
+              </TouchableOpacity>
+              {images[0].id !== 'original' && canDeleteImages && (
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => removeImage(images[0].id)}
@@ -564,8 +690,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
             </View>
             <View style={styles.sideImagesContainer}>
               <View style={styles.sideImageWrapper}>
-                <Image source={{ uri: images[1].uri }} style={styles.sideImage} />
-                {images[1].id !== 'original' && (
+                <TouchableOpacity onPress={() => handleImagePress(1)}>
+                  <Image source={{ uri: images[1].uri }} style={styles.sideImage} />
+                </TouchableOpacity>
+                {images[1].id !== 'original' && canDeleteImages && (
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => removeImage(images[1].id)}
@@ -591,7 +719,7 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         );
       }
 
-      // For 3+ images, show main image, one side image, and add photo card
+      // For 3+ images - ENHANCED with gallery access
       const mainImage = images[0];
       const sideImage = images[1];
       const remainingCount = images.length - 2;
@@ -599,8 +727,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
       return (
         <View style={styles.multipleImagesContainer}>
           <View style={styles.mainImageContainer}>
-            <Image source={{ uri: mainImage.uri }} style={styles.mainImage} />
-            {mainImage.id !== 'original' && (
+            <TouchableOpacity onPress={() => handleImagePress(0)}>
+              <Image source={{ uri: mainImage.uri }} style={styles.mainImage} />
+            </TouchableOpacity>
+            {mainImage.id !== 'original' && canDeleteImages && (
               <TouchableOpacity
                 style={styles.removeImageButton}
                 onPress={() => removeImage(mainImage.id)}
@@ -611,8 +741,10 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           </View>
           <View style={styles.sideImagesContainer}>
             <View style={styles.sideImageWrapper}>
-              <Image source={{ uri: sideImage.uri }} style={styles.sideImage} />
-              {sideImage.id !== 'original' && (
+              <TouchableOpacity onPress={() => handleImagePress(1)}>
+                <Image source={{ uri: sideImage.uri }} style={styles.sideImage} />
+              </TouchableOpacity>
+              {sideImage.id !== 'original' && canDeleteImages && (
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => removeImage(sideImage.id)}
@@ -621,9 +753,13 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
                 </TouchableOpacity>
               )}
               {remainingCount > 0 && (
-                <View style={styles.moreImagesOverlay}>
+                <TouchableOpacity 
+                  style={styles.moreImagesOverlay}
+                  onPress={handleMoreImagesPress}
+                >
                   <Text style={styles.moreImagesText}>+{remainingCount}</Text>
-                </View>
+                  <Text style={styles.viewAllText}>View all</Text>
+                </TouchableOpacity>
               )}
             </View>
             <TouchableOpacity
@@ -642,26 +778,19 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
         </View>
       );
     };
+
     const handleConfirm = async () => {
       if (!threatDetails) return;
 
-      // Prevent users from voting on their own threats
       if (isUserOwnThreat()) {
-        Alert.alert(
-          'Cannot Vote',
-          'You cannot vote on your own threat report.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Cannot Vote', 'You cannot vote on your own threat report.', [{ text: 'OK' }]);
         return;
       }
 
       try {
         setConfirmationStatus('loading');
-
-        // Use the real threat ID for voting
         const realThreatId = getRealThreatId();
 
-        // Prepare complete vote data as expected by API
         const voteData = {
           location: `${threatDetails.latitude}, ${threatDetails.longitude}`,
           latitude: threatDetails.latitude.toString(),
@@ -669,34 +798,19 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           description: threatDetails.description || `${threatDetails.label} reported`,
           report_type: threatDetails.label.toLowerCase(),
           vote: "confirm",
-          // Optional AI fields
           ai_classification: threatDetails.ai_classification || "",
           ai_confidence: threatDetails.ai_confidence || 0,
           classification_details: threatDetails.classification_details || ""
         };
 
-        console.log('Sending complete vote data:', JSON.stringify(voteData, null, 2));
-        console.log('Real Threat ID:', realThreatId);
-
         const response = await HomeAPIS.voteThreatReport(realThreatId, voteData);
-
-        console.log('Vote confirmed successfully:', response);
-
         setConfirmationStatus('confirmed');
         onConfirm?.(threatDetails.id);
 
-        Alert.alert(
-          'Vote Submitted',
-          'Thank you for confirming this threat report.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Vote Submitted', 'Thank you for confirming this threat report.', [{ text: 'OK' }]);
 
       } catch (error) {
         console.error('Error confirming threat:', error);
-        if (error.response) {
-          console.error('Error status:', error.response.status);
-          console.error('Error data:', error.response.data);
-        }
         setConfirmationStatus('unconfirmed');
         Alert.alert('Error', 'Failed to submit your vote. Please try again.');
       }
@@ -705,23 +819,15 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     const handleDeny = async () => {
       if (!threatDetails) return;
 
-      // Prevent users from voting on their own threats
       if (isUserOwnThreat()) {
-        Alert.alert(
-          'Cannot Vote',
-          'You cannot vote on your own threat report.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Cannot Vote', 'You cannot vote on your own threat report.', [{ text: 'OK' }]);
         return;
       }
 
       try {
         setConfirmationStatus('loading');
-
-        // Use the real threat ID for voting
         const realThreatId = getRealThreatId();
 
-        // Prepare complete vote data as expected by API
         const voteData = {
           location: `${threatDetails.latitude}, ${threatDetails.longitude}`,
           latitude: threatDetails.latitude.toString(),
@@ -729,36 +835,23 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
           description: threatDetails.description || `${threatDetails.label} reported`,
           report_type: threatDetails.label.toLowerCase(),
           vote: "deny",
-          // Optional AI fields
           ai_classification: threatDetails.ai_classification || "",
           ai_confidence: threatDetails.ai_confidence || 0,
           classification_details: threatDetails.classification_details || ""
         };
 
-        console.log('Sending complete deny vote data:', JSON.stringify(voteData, null, 2));
-
         const response = await HomeAPIS.voteThreatReport(realThreatId, voteData);
-
         setConfirmationStatus('denied');
         onDeny?.(threatDetails.id);
 
-        Alert.alert(
-          'Vote Submitted',
-          'Thank you for your feedback on this threat report.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Vote Submitted', 'Thank you for your feedback on this threat report.', [{ text: 'OK' }]);
 
       } catch (error) {
         console.error('Error denying threat:', error);
-        if (error.response) {
-          console.error('Error status:', error.response.status);
-          console.error('Error data:', error.response.data);
-        }
         setConfirmationStatus('unconfirmed');
         Alert.alert('Error', 'Failed to submit your vote. Please try again.');
       }
     };
-
 
     const getStatusLabel = () => {
       if (isLoadingVoteStatus) {
@@ -780,149 +873,158 @@ const ThreatDetailsBottomSheet = forwardRef<BottomSheet, ThreatDetailsBottomShee
     if (!threatDetails) return null;
 
     return (
-      <BottomSheet
-        ref={ref}
-        index={-1}
-        snapPoints={snapPoints}
-        onChange={onChange}
-        enablePanDownToClose
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.handleIndicator}
-      >
-        <BottomSheetView style={styles.bottomSheetContent}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              {/* Icon and threat label on same line, positioned left */}
-              <View style={styles.threatInfoRow}>
-                <View style={styles.threatIconContainer}>
-                  <Image
-                    source={threatDetails.icon}
-                    style={styles.threatIcon}
-                    resizeMode="contain"
-                  />
+      <>
+        <BottomSheet
+          ref={ref}
+          index={-1}
+          snapPoints={snapPoints}
+          onChange={onChange}
+          enablePanDownToClose
+          backgroundStyle={styles.bottomSheetBackground}
+          handleIndicatorStyle={styles.handleIndicator}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <View style={styles.threatInfoRow}>
+                  <View style={styles.threatIconContainer}>
+                    <Image
+                      source={threatDetails.icon}
+                      style={styles.threatIcon}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={styles.threatTypeName}>
+                    {getThreatTypeName(threatDetails.label)}
+                  </Text>
                 </View>
-                <Text style={styles.threatTypeName}>
-                  {getThreatTypeName(threatDetails.label)}
-                </Text>
+
+                <View style={styles.dateTimeContainer}>
+                  <Text style={styles.dateTimeText}>
+                    {formatTimestamp(threatDetails.timestamp)}
+                  </Text>
+                </View>
               </View>
 
-              {/* DateTime in separate view below, also positioned left */}
-              <View style={styles.dateTimeContainer}>
-                <Text style={styles.dateTimeText}>
-                  {formatTimestamp(threatDetails.timestamp)}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.headerRight}>
-              {showDeleteButton && (
+              <View style={styles.headerRight}>
+                {showDeleteButton && (
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={handleDelete}
+                  >
+                    <Trash2 size={18} color='#FF3B30' />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={handleDelete}
+                  style={styles.shareButton}
+                  onPress={handleShare}
+                  disabled={isUploadingImage}
                 >
-                  <Trash2 size={18} color='#FF3B30' />
+                  <ShareIcon size={20} color='#333' />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={onClose}
+                >
+                  <X size={20} color='#333' />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.statusActionRow}>
+              <View style={styles.statusLabelContainer}>
+                <View style={[styles.statusLabel, getStatusLabel().style]}>
+                  <Text style={styles.statusLabelText}>{getStatusLabel().text}</Text>
+                </View>
+              </View>
+
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.confirmButton,
+                    confirmationStatus === 'confirmed' && styles.activeConfirmButton
+                  ]}
+                  onPress={handleConfirm}
+                  disabled={
+                    threatDetails?.is_automated ||
+                    confirmationStatus === 'denied' ||
+                    confirmationStatus === 'loading' ||
+                    isLoadingVoteStatus
+                  }
+                >
+                  <Text style={[
+                    styles.confirmButtonEmoji,
+                    (confirmationStatus === 'confirmed' || confirmationStatus === 'loading') && styles.activeButtonEmoji
+                  ]}>
+                    ✅
+                  </Text>
+                  <Text style={[
+                    styles.confirmButtonText,
+                    (confirmationStatus === 'confirmed' || confirmationStatus === 'loading') && styles.activeButtonText
+                  ]}>
+                    Confirm
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.denyButton,
+                    confirmationStatus === 'denied' && styles.activeDenyButton
+                  ]}
+                  onPress={handleDeny}
+                  disabled={
+                    threatDetails?.is_automated ||
+                    confirmationStatus === 'confirmed' ||
+                    confirmationStatus === 'denied' ||
+                    confirmationStatus === 'loading' ||
+                    isLoadingVoteStatus
+                  }
+                >
+                  <Text style={[
+                    styles.denyButtonEmoji,
+                    (confirmationStatus === 'denied' || confirmationStatus === 'loading') && styles.activeButtonEmoji
+                  ]}>
+                    ❌
+                  </Text>
+                  <Text style={[
+                    styles.denyButtonText,
+                    (confirmationStatus === 'denied' || confirmationStatus === 'loading') && styles.activeButtonText
+                  ]}>
+                    Deny
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.contentContainer}>
+              {images.length > 0 && (
+                <View style={styles.imageGallery}>
+                  {renderImageLayout()}
+                </View>
               )}
-              <TouchableOpacity
-                style={styles.shareButton}
-                onPress={handleShare}
-                disabled={isUploadingImage}
-              >
-                <ShareIcon size={20} color='#333' />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={onClose}
-              >
-                <X size={20} color='#333' />
-              </TouchableOpacity>
+
+              {threatDetails.description && (
+                <Text style={styles.descriptionText}>
+                  {threatDetails.description}
+                </Text>
+              )}
             </View>
-          </View>
+          </BottomSheetView>
+        </BottomSheet>
 
-          <View style={styles.statusActionRow}>
-            <View style={styles.statusLabelContainer}>
-              <View style={[styles.statusLabel, getStatusLabel().style]}>
-                <Text style={styles.statusLabelText}>{getStatusLabel().text}</Text>
-              </View>
-            </View>
-
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  styles.confirmButton,
-                  confirmationStatus === 'confirmed' && styles.activeConfirmButton
-                ]}
-                onPress={handleConfirm}
-                disabled={
-                  threatDetails?.is_automated ||
-                  confirmationStatus === 'denied' ||
-                  confirmationStatus === 'loading' ||
-                  isLoadingVoteStatus
-                }              >
-                <Text style={[
-                  styles.confirmButtonEmoji,
-                  (confirmationStatus === 'confirmed' || confirmationStatus === 'loading') && styles.activeButtonEmoji
-                ]}>
-                  ✅
-                </Text>
-                <Text style={[
-                  styles.confirmButtonText,
-                  (confirmationStatus === 'confirmed' || confirmationStatus === 'loading') && styles.activeButtonText
-                ]}>
-                  Confirm
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  styles.denyButton,
-                  confirmationStatus === 'denied' && styles.activeDenyButton
-                ]}
-                onPress={handleDeny}
-                disabled={
-                  threatDetails?.is_automated ||
-                  confirmationStatus === 'confirmed' ||
-                  confirmationStatus === 'denied' ||
-                  confirmationStatus === 'loading' ||
-                  isLoadingVoteStatus
-                }              >
-                <Text style={[
-                  styles.denyButtonEmoji,
-                  (confirmationStatus === 'denied' || confirmationStatus === 'loading') && styles.activeButtonEmoji
-                ]}>
-                  ❌
-                </Text>
-                <Text style={[
-                  styles.denyButtonText,
-                  (confirmationStatus === 'denied' || confirmationStatus === 'loading') && styles.activeButtonText
-                ]}>
-                  Deny
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* NEW: Status and Action row below header */}
-
-          <View style={styles.contentContainer}>
-            {images.length > 0 && (
-              <View style={styles.imageGallery}>
-                {renderImageLayout()}
-              </View>
-            )}
-
-            {threatDetails.description && (
-              <Text style={styles.descriptionText}>
-                {threatDetails.description}
-              </Text>
-            )}
-          </View>
-        </BottomSheetView>
-      </BottomSheet>
+        {/* NEW: Image Gallery Modal */}
+        <ImageGalleryModal
+          visible={showImageGallery}
+          images={images}
+          initialIndex={galleryInitialIndex}
+          onClose={() => setShowImageGallery(false)}
+          onDeleteImage={removeImage}
+          canDeleteImages={isUserOwnThreat()}
+        />
+      </>
     );
-
   }
 );
 
@@ -950,10 +1052,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    // paddingTop: 5,
     paddingBottom: 15,
-    // borderBottomWidth: 1,
-    // borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerLeft: {
     flex: 1,
@@ -965,68 +1064,20 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 20,
   },
-  threatInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start', // Change this back to center
-  },
-  leftSection: {
-    alignItems: 'flex-start',
-    backgroundColor: '#ff44'
-  },
-  threatIconAndTimeContainer: {
-    alignItems: 'flex-start',
-    marginBottom: 4, // Small gap between icon and datetime
-  },
-  threatTextContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    // marginLeft: 8, // Close to the icon section
-  },
-  threatTypeName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginLeft: 5,
-    marginBottom: 10,
-  },
-  actionHeaderButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  streetName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '500',
-  },
   threatInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4, // Small gap before datetime
+    marginBottom: 4,
   },
   threatIconContainer: {
     width: 35,
     height: 35,
     borderRadius: 25,
-    backgroundColor: '#FF3B30', // Red background like HeadsUp threats
+    backgroundColor: '#FF3B30',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF', // White border
+    borderColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -1042,11 +1093,18 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: '#FFFFFF',
   },
+  threatTypeName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginLeft: 5,
+    marginBottom: 10,
+  },
   deleteButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF', // Changed to white
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(255, 59, 48, 0.3)',
     alignItems: 'center',
@@ -1064,7 +1122,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF', // Changed to white
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1076,12 +1134,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   closeButton: {
     width: 35,
     height: 35,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF', // Changed to white
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1093,27 +1150,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  addImageButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    borderWidth: 2,
-    borderColor: '#34C759',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addImageButtonText: {
-    color: '#34C759',
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  // NEW: Status and Action row styles
   statusActionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1126,17 +1162,129 @@ const styles = StyleSheet.create({
   statusLabelContainer: {
     alignItems: 'flex-start',
   },
+  statusLabel: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  unconfirmedLabel: {
+    backgroundColor: '#00d5fa',
+  },
+  confirmedLabel: {
+    backgroundColor: '#34C759',
+  },
+  deniedLabel: {
+    backgroundColor: '#FF3B30',
+  },
+  loadingLabel: {
+    backgroundColor: '#FF9500',
+  },
+  statusLabelText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dateTimeContainer: {
+    alignSelf: 'flex-start',
+  },
+  dateTimeText: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '400',
+  },
   contentContainer: {
     flex: 1,
     padding: 20,
+  },
+  imageGallery: {
+    height: 200,
+    marginBottom: 15,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  singleImageContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  twoImagesContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  mainImageContainer: {
+    flex: 2,
+    position: 'relative',
+  },
+  mainImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    resizeMode: 'cover'
+  },
+  sideImageContainer: {
+    flex: 1,
+  },
+  sideImageWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  sideImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    resizeMode: 'cover'
+  },
+  multipleImagesContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sideImagesContainer: {
+    flex: 1,
+    gap: 8,
+  },
+  moreImagesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreImagesText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  viewAllText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeImageText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   addPhotoCard: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 10,
-    // borderWidth: 2,
-    // borderColor: 'rgba(255, 255, 255, 0.3)',
-    // borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 20,
@@ -1145,9 +1293,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 8,
-    // borderWidth: 1.5,
-    // borderColor: 'rgba(255, 255, 255, 0.3)',
-    // borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 10,
@@ -1189,145 +1334,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  imageGallery: {
-    height: 200,
-    marginBottom: 15,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  singleImageContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  singleImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-    resizeMode: 'cover'
-  },
-  twoImagesContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  mainImageContainer: {
-    flex: 2,
-    position: 'relative',
-  },
-  mainImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-    resizeMode: 'cover'
-  },
-  sideImageContainer: {
-    flex: 1,
-  },
-  sideImageWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  sideImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-    resizeMode: 'cover'
-  },
-  multipleImagesContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  sideImagesContainer: {
-    flex: 1,
-    gap: 8,
-  },
-  multipleSideImage: {
-    width: '100%',
-    height: '48%',
-    borderRadius: 10,
-    resizeMode: 'cover'
-  },
-  moreImagesOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreImagesText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  removeImageText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  noImageContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-  },
-  noImageText: {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 16,
-    fontStyle: 'italic',
-  },
-  statusLabel: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-  },
-  unconfirmedLabel: {
-    backgroundColor: '#00d5fa',
-  },
-  confirmedLabel: {
-    backgroundColor: '#34C759',
-  },
-  deniedLabel: {
-    backgroundColor: '#FF3B30',
-  },
-  loadingLabel: {
-    backgroundColor: '#FF9500',
-  },
-  statusLabelText: {
-    color: '#000',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dateTimeContainer: {
-    alignSelf: 'flex-start', // Ensures it starts from the left
-  },
-  dateTimeText: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '400',
-  },
-  descriptionText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    lineHeight: 22,
-    marginBottom: 25,
-  },
   actionButtonsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -1336,7 +1342,6 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    // paddingVertical: 8,
     paddingHorizontal: 2,
     borderRadius: 20,
     justifyContent: 'center',
@@ -1344,23 +1349,11 @@ const styles = StyleSheet.create({
   confirmButton: {
     borderWidth: 0,
   },
-  activeConfirmButton: {
-  },
+  activeConfirmButton: {},
   denyButton: {
     borderWidth: 0,
   },
-  activeDenyButton: {
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  disabledButtonEmoji: {
-    opacity: 0.5,
-  },
-  disabledButtonText: {
-    opacity: 0.5,
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
+  activeDenyButton: {},
   confirmButtonEmoji: {
     fontSize: 16,
     marginRight: 4,
@@ -1379,9 +1372,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  activeButtonEmoji: {
-    // Emoji color stays the same when active
-  },
+  activeButtonEmoji: {},
   activeButtonText: {
     color: '#FFFFFF',
   },
@@ -1390,17 +1381,115 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
   },
-  loadingText: {
+  descriptionText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+
+  // NEW: Image Gallery Modal Styles
+  galleryModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+  },
+  galleryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  galleryHeaderLeft: {
+    flex: 1,
+  },
+  galleryHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  galleryCounter: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontStyle: 'italic',
   },
-  line: {
+  galleryDeleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryImageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  galleryImage: {
+    width: screenWidth,
+    height: screenHeight * 0.6,
+    resizeMode: 'contain',
+  },
+  galleryNavButton: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  galleryNavLeft: {
+    left: 20,
+  },
+  galleryNavRight: {
+    right: 20,
+  },
+  thumbnailContainer: {
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  thumbnailScrollContent: {
+    paddingHorizontal: 20,
+  },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 10,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  activeThumbnail: {
+    borderWidth: 2,
+    borderColor: '#007AFF',
+  },
+  thumbnailImage: {
     width: '100%',
-    height: 2,
-    backgroundColor: '#666',
-    marginBottom: 14
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  thumbnailOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 122, 255, 0.3)',
   },
 });
 
