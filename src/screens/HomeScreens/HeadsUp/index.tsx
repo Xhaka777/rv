@@ -135,6 +135,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const [showTimeFilter, setShowTimeFilter] = useState(false);
   const [timeFilterValue, setTimeFilterValue] = useState(24); // Default to 24 hours
   const [filteredThreats, setFilteredThreats] = useState<any[]>([]);
+  const [hasCustomTimeFilter, setHasCustomTimeFilter] = useState(false);
 
   // Threat details bottom sheet state
   const [selectedThreatDetails, setSelectedThreatDetails] = useState<ThreatDetails | null>(null);
@@ -184,10 +185,18 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     },
     {
       id: '5',
-      image: Images.Clock, // Using the Schedule icon from your Images
+      image: Images.Clock,
       onPress: () => {
         console.log('Time filter button pressed');
-        setShowTimeFilter(!showTimeFilter);
+        if (hasCustomTimeFilter) {
+          // If user has custom filter, clicking resets to live mode
+          setHasCustomTimeFilter(false);
+          setTimeFilterValue(24); // Reset to default
+          setShowTimeFilter(false);
+        } else {
+          // Show the time filter slider
+          setShowTimeFilter(!showTimeFilter);
+        }
       },
     },
     {
@@ -346,6 +355,11 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
   };
 
+  const handleTimeFilterChange = useCallback((value: number) => {
+    setTimeFilterValue(value);
+    setHasCustomTimeFilter(true); // Mark that user has set a custom filter
+  }, []);
+
   // Function to handle threat marker tap
   const handleThreatMarkerPress = async (threat: any) => {
     const streetName = await getStreetName(threat.latitude, threat.longitude);
@@ -389,8 +403,8 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   };
 
   useEffect(() => {
-    if (showTimeFilter) {
-      // User is actively using the time filter
+    if (showTimeFilter || hasCustomTimeFilter) {
+      // User is actively using the time filter OR has set a custom filter
       const timeFiltered = filterThreatsByTime(threats, timeFilterValue, true);
       const radiusFiltered = filterThreatsByRadius(timeFiltered, currentLocation, headsUpRadius);
       setFilteredThreats(radiusFiltered);
@@ -402,8 +416,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       setFilteredThreats(radiusFiltered);
       setThreatsWithinRadius(radiusFiltered);
     }
-  }, [threats, timeFilterValue, showTimeFilter, filterThreatsByTime, filterThreatsByRadius, currentLocation, headsUpRadius]);
-
+  }, [threats, timeFilterValue, showTimeFilter, hasCustomTimeFilter, filterThreatsByTime, filterThreatsByRadius, currentLocation, headsUpRadius]);
 
   useEffect(() => {
     getCurrentLocation();
@@ -837,7 +850,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const loadThreats = async (retryCount = 0, maxRetries = 3) => {
     // Check network connectivity first
     const netInfo = await NetInfo.fetch();
-    
+
     if (!netInfo.isConnected) {
       Alert.alert(
         'No Internet Connection',
@@ -846,15 +859,15 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       );
       return;
     }
-  
+
     try {
       const response = await HomeAPIS.getThreatReports();
-  
+
       // Your existing logic - unchanged
       if (!response?.data?.results) return;
-  
+
       console.log("📍 API Threat Results Loaded:", response.data.results.length);
-  
+
       const normalizedThreats = response.data.results.map((item: any) => ({
         id: item.id,
         realId: item.id,
@@ -873,24 +886,24 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         user: item.user,
         is_automated: item.report_type === "automated_alert"
       }));
-  
+
       setThreats(prev => {
         // Remove any temporary item that was replaced
         const withoutConflictingTemp = prev.filter(
           t => !normalizedThreats.some(newT => newT.id === t.id)
         );
-  
+
         // Merge backend results with kept temp items
         return [...withoutConflictingTemp, ...normalizedThreats];
       });
-  
+
       console.log("✅ Threat state updated after sync.");
-  
+
       // Reset retry count on success
       if (retryCount > 0) {
         console.log('✅ Threats loaded successfully after retry');
       }
-  
+
     } catch (error) {
       console.log('❌ Error loading threat reports:', {
         message: error?.message,
@@ -900,18 +913,18 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         config: error?.config?.url,
         attempt: retryCount + 1
       });
-  
+
       if (retryCount < maxRetries) {
         const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
         console.log(`Retrying threats in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
-        
+
         setTimeout(() => {
           loadThreats(retryCount + 1, maxRetries);
         }, delay);
       } else {
         // Show different messages based on error type
         let errorMessage = 'Failed to load threats after multiple attempts. Please check your connection.';
-        
+
         if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('timeout')) {
           errorMessage = 'Network timeout after multiple attempts. Please check your internet connection and try again.';
         } else if (error?.response?.status >= 500) {
@@ -919,7 +932,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         } else if (error?.response?.status === 401 || error?.response?.status === 403) {
           errorMessage = 'Authentication error. Please log in again.';
         }
-  
+
         Alert.alert(
           'Load Error',
           errorMessage,
@@ -1787,7 +1800,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
                 minimumValue={1}
                 maximumValue={24 * 30} // 30 days
                 value={timeFilterValue}
-                onValueChange={setTimeFilterValue}
+                onValueChange={handleTimeFilterChange}
                 step={1}
                 minimumTrackTintColor="#007AFF"
                 maximumTrackTintColor="#E0E0E0"
