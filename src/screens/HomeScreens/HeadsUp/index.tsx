@@ -44,6 +44,7 @@ import CameraScreen from '../../../components/CameraScreen';
 import Slider from '@react-native-community/slider';
 import { isThreatWithinRadius } from '../../../utils/distanceHelpers';
 import { debounce } from 'lodash';
+import NetInfo from '@react-native-community/netinfo';
 
 const { width, height } = Dimensions.get('window');
 
@@ -720,74 +721,140 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     }
   }, [activeSheet, isSafeZoneCreationMode]);
 
-  // SafeZone functions
-  const getZones = () => {
+
+  const getZones = async (retryCount = 0, maxRetries = 3) => {
+    // Check network connectivity first
+    const netInfo = await NetInfo.fetch();
+
+    if (!netInfo.isConnected) {
+      Alert.alert(
+        'No Internet Connection',
+        'Please check your internet connection and try again.',
+        [{ text: 'Retry', onPress: () => getZones() }, { text: 'Cancel' }]
+      );
+      return;
+    }
+
     setLoading(true);
-    HomeAPIS.getSafeZones()
-      .then(async res => {
-        let array: any = [];
-        const currentTime = Date.now();
 
-        res?.data?.map((item: any) => {
-          const createdTime = new Date(item.created_at || item.timestamp).getTime();
-          const isRecent = currentTime - createdTime < 10000;
+    try {
+      const res = await HomeAPIS.getSafeZones();
 
-          array?.push({
-            id: item?.id,
-            name: item?.name || 'safezone',
-            address: item?.address,
-            image: Images.Target,
-            location: {
-              latitude: parseFloat(item?.latitude),
-              longitude: parseFloat(item?.longitude),
-            },
-            radius: parseInt(item?.radius),
-            type: isRecent ? 'new' : 'existing',
-            is_active: item?.is_active,
-            zone_type: item?.zone_type,
-          });
+      // Success handling - your existing logic
+      let array: any = [];
+      const currentTime = Date.now();
+
+      res?.data?.map((item: any) => {
+        const createdTime = new Date(item.created_at || item.timestamp).getTime();
+        const isRecent = currentTime - createdTime < 10000;
+
+        array?.push({
+          id: item?.id,
+          name: item?.name || 'safezone',
+          address: item?.address,
+          image: Images.Target,
+          location: {
+            latitude: parseFloat(item?.latitude),
+            longitude: parseFloat(item?.longitude),
+          },
+          radius: parseInt(item?.radius),
+          type: isRecent ? 'new' : 'existing',
+          is_active: item?.is_active,
+          zone_type: item?.zone_type,
         });
+      });
 
-        const isInSafeZone = array.find((zone: any) => {
-          const distance = calculateDistance(
-            userCoordinates?.latitude,
-            userCoordinates?.longitude,
-            zone.location.latitude,
-            zone.location.longitude,
-          );
-          return distance <= zone.radius;
-        });
+      const isInSafeZone = array.find((zone: any) => {
+        const distance = calculateDistance(
+          userCoordinates?.latitude,
+          userCoordinates?.longitude,
+          zone.location.latitude,
+          zone.location.longitude,
+        );
+        return distance <= zone.radius;
+      });
 
-        if (isInSafeZone) {
-          setInSZ(true);
-          dispatch(HomeActions.setInSafeZone(true));
-        } else {
-          setInSZ(false);
-          dispatch(HomeActions.setInSafeZone(false));
+      if (isInSafeZone) {
+        setInSZ(true);
+        dispatch(HomeActions.setInSafeZone(true));
+      } else {
+        setInSZ(false);
+        dispatch(HomeActions.setInSafeZone(false));
+      }
+
+      setSafeZones(array);
+      setLoading(false);
+
+      // Reset retry count on success
+      if (retryCount > 0) {
+        console.log('✅ Safe zones loaded successfully after retry');
+      }
+
+    } catch (err) {
+      console.log('❌ Error fetching safe zones:', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+        code: err?.code,
+        config: err?.config?.url,
+        attempt: retryCount + 1
+      });
+
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+
+        // Don't set loading to false here, keep it loading during retry
+        setTimeout(() => {
+          getZones(retryCount + 1, maxRetries);
+        }, delay);
+      } else {
+        setLoading(false);
+
+        // Show different messages based on error type
+        let errorMessage = 'Failed to load safe zones after multiple attempts. Please check your connection.';
+
+        if (err?.code === 'NETWORK_ERROR' || err?.message?.includes('timeout')) {
+          errorMessage = 'Network timeout after multiple attempts. Please check your internet connection and try again.';
+        } else if (err?.response?.status >= 500) {
+          errorMessage = 'Server error after multiple attempts. Please try again later.';
+        } else if (err?.response?.status === 401 || err?.response?.status === 403) {
+          errorMessage = 'Authentication error. Please log in again.';
         }
 
-        setSafeZones(array);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.log('❌ Error fetching safe zones:', err?.response?.data);
-        setLoading(false);
         Alert.alert(
           'Load Error',
-          'Failed to load safe zones. Please check your connection.',
-          [{ text: 'Retry', onPress: () => getZones() }, { text: 'Cancel' }]
+          errorMessage,
+          [
+            { text: 'Retry', onPress: () => getZones(0, maxRetries) }, // Reset retry count
+            { text: 'Cancel' }
+          ]
         );
-      });
+      }
+    }
   };
 
-  const loadThreats = async () => {
+  const loadThreats = async (retryCount = 0, maxRetries = 3) => {
+    // Check network connectivity first
+    const netInfo = await NetInfo.fetch();
+    
+    if (!netInfo.isConnected) {
+      Alert.alert(
+        'No Internet Connection',
+        'Please check your internet connection and try again.',
+        [{ text: 'Retry', onPress: () => loadThreats() }, { text: 'Cancel' }]
+      );
+      return;
+    }
+  
     try {
       const response = await HomeAPIS.getThreatReports();
-
+  
+      // Your existing logic - unchanged
       if (!response?.data?.results) return;
-
+  
       console.log("📍 API Threat Results Loaded:", response.data.results.length);
-
+  
       const normalizedThreats = response.data.results.map((item: any) => ({
         id: item.id,
         realId: item.id,
@@ -806,26 +873,64 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         user: item.user,
         is_automated: item.report_type === "automated_alert"
       }));
-
+  
       setThreats(prev => {
         // Remove any temporary item that was replaced
         const withoutConflictingTemp = prev.filter(
           t => !normalizedThreats.some(newT => newT.id === t.id)
         );
-
+  
         // Merge backend results with kept temp items
         return [...withoutConflictingTemp, ...normalizedThreats];
       });
-
+  
       console.log("✅ Threat state updated after sync.");
-
+  
+      // Reset retry count on success
+      if (retryCount > 0) {
+        console.log('✅ Threats loaded successfully after retry');
+      }
+  
     } catch (error) {
-      console.error("❌ Error loading threat reports:", error);
+      console.log('❌ Error loading threat reports:', {
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        code: error?.code,
+        config: error?.config?.url,
+        attempt: retryCount + 1
+      });
+  
+      if (retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retrying threats in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+        
+        setTimeout(() => {
+          loadThreats(retryCount + 1, maxRetries);
+        }, delay);
+      } else {
+        // Show different messages based on error type
+        let errorMessage = 'Failed to load threats after multiple attempts. Please check your connection.';
+        
+        if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('timeout')) {
+          errorMessage = 'Network timeout after multiple attempts. Please check your internet connection and try again.';
+        } else if (error?.response?.status >= 500) {
+          errorMessage = 'Server error after multiple attempts. Please try again later.';
+        } else if (error?.response?.status === 401 || error?.response?.status === 403) {
+          errorMessage = 'Authentication error. Please log in again.';
+        }
+  
+        Alert.alert(
+          'Load Error',
+          errorMessage,
+          [
+            { text: 'Retry', onPress: () => loadThreats(0, maxRetries) }, // Reset retry count
+            { text: 'Cancel' }
+          ]
+        );
+      }
     }
   };
-
-
-
 
   const createThreadZone = async (
     latitude: number,
