@@ -173,6 +173,10 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
     }, []),
   );
 
+  const handleBack = () => {
+    NavigationService.goBack();
+  };
+
   const getServiceIcon = (serviceType: string) => {
     // Debug log to see what service type is being processed
     console.log('Getting icon for service type:', serviceType);
@@ -239,28 +243,23 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
   return (
     <MainContainer>
       {/* Premium icon back with title */}
-      <View style={styles.headerContainer}>
-        <View style={styles.headerLeft}>
-          <View style={styles.headerIcon}>
-            <Image
-              source={Images.Premium}
-              style={styles.premiumIcon}
-              resizeMode="contain"
-            />
-            <CustomText.LargeBoldText customStyle={styles.headerTitle}>
-              Responders
-            </CustomText.LargeBoldText>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Image
+            source={Images.Premium}
+            style={styles.headsUpIcon}
+            resizeMode="contain"
+          />
+          <CustomText.LargeBoldText customStyle={styles.headerTitle}>
+            Responders
+          </CustomText.LargeBoldText>
         </View>
-        <TouchableOpacity
-          style={styles.exitButton}
-          onPress={() => NavigationService.goBack()}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={handleBack} style={styles.exitButton}>
           <Image
             source={Images.Exit}
-            style={{ width: 20, height: 20 }}
-            resizeMode='contain' />
+            style={{ width: 20, height: 20, tintColor: '#ffffff' }}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
 
@@ -307,6 +306,35 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Metrix.VerticalSize(15),
+    // paddingHorizontal: Metrix.HorizontalSize(20),
+    borderBottomWidth: 1,
+    borderBottomColor: Utills.selectedThemeColors().TextInputBorderColor,
+  },
+  headerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headsUpIcon: {
+    width: Metrix.HorizontalSize(32),
+    height: Metrix.VerticalSize(32),
+    tintColor: Utills.selectedThemeColors().PrimaryTextColor,
+    marginRight: Metrix.HorizontalSize(10),
+  },
+  headerTitle: {
+    fontSize: Metrix.customFontSize(18),
+    fontWeight: '600',
+    color: Utills.selectedThemeColors().PrimaryTextColor,
+  },
+  exitButton: {
+    padding: Metrix.HorizontalSize(8),
+    marginLeft: Metrix.HorizontalSize(10),
+  },
   flatlist: {
     paddingHorizontal: Metrix.VerticalSize(0),
     alignSelf: 'center',

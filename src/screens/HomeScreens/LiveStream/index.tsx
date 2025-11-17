@@ -495,7 +495,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     {
       id: '1',
       key: 'EyeCam/NoMic Toggle',
-      icon: isEyeCam ? Images.Ear : Images.NoMic,
+      icon: isEyeCam ? (mode === 'VIDEO' ? Images.EyeCam : Images.Ear) : Images.NoMic,
       onPress: () => {
         if (isHelpMode) {
           // Show help modal for EyeCam
@@ -516,17 +516,24 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
             safeWord: safeWord,
           }));
 
-          showToastNotification({
-            isComplex: true,
-            type: 'eyeCam',
-            lines: [
-              { text: 'Video Stream activates via', style: 'normal' },
-              { text: 'Threat Detection or Safe Word', style: 'bold' },
-              { text: '⚠️ NOTE! ⚠️', style: 'normal' },
-              { text: 'Must be armed', style: 'normal' },
-              { text: '👉', style: 'bold', showInlineIcon: true }
-            ]
-          });
+          if (mode === 'VIDEO') {
+            showToastNotification({
+              isComplex: true,
+              type: 'eyeCam',
+              lines: [
+                { text: 'Video Stream activates via', style: 'normal' },
+                { text: 'Threat Detection or Safe Word', style: 'bold' },
+                { text: '⚠️ NOTE! ⚠️', style: 'normal' },
+                { text: 'Must be armed', style: 'normal' },
+                { text: '👉', style: 'bold', showInlineIcon: true }
+              ]
+            });
+          } else {
+            showToastNotification({
+              firstLine: 'Audio Stream activates via',
+              secondLine: 'Threat Detection or Safe Word'
+            });
+          }
         }
         else {
           dispatch(HomeActions.setPreferenceState('MIC'));

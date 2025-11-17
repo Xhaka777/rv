@@ -211,7 +211,7 @@ export const Settings: React.FC<SettingsProps> = ({ }) => {
     {
       id: '4',
       image: Images.HeadsUp,
-      text: 'Heads Up Alers',
+      text: 'Heads Up Alerts',
       styles: { width: '100%' },
       onPress: () => {
         NavigationService.navigate('HeadsUpSettings');
