@@ -20,7 +20,8 @@ import {
   SafeZone,
   BodyCam,
   ThreatReportScreen,
-  SiriSetupScreen
+  SiriSetupScreen,
+  ChatDetail
 } from '../screens';
 import { TabStack } from './TabStack';
 import { HeadsUpSettings } from '../screens/HomeScreens/HeadsUpSetting';
@@ -141,5 +142,10 @@ export const HomeStack: HomeScreenStacksTypes = [
     name: RouteNames.HomeRoutes.SiriSetupScreen,
     component: SiriSetupScreen,
     key: RouteNames.HomeRoutes.SiriSetupScreen,
-  }
+  },
+  {
+    name: RouteNames.HomeRoutes.ChatDetail, 
+    component: ChatDetail,
+    key: RouteNames.HomeRoutes.ChatDetail,
+  },
 ];

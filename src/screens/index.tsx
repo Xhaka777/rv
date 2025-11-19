@@ -34,6 +34,7 @@ import { HeadsUpSettings } from './HomeScreens/HeadsUpSetting';
 import ThreatReportScreen from './HomeScreens/ThreatReportScreen';
 import { SiriSetupScreen } from './HomeScreens/SiriSetupScreen';
 import { Chat } from './HomeScreens/Chat';
+import { ChatDetail } from './HomeScreens/ChatDetail';
 
 export {
   // Auth Screens
@@ -71,5 +72,6 @@ export {
   HeadsUpSettings,
   ThreatReportScreen,
   SiriSetupScreen,
-  Chat
+  Chat,
+  ChatDetail
 };

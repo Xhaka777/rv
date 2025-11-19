@@ -129,4 +129,18 @@ export type SiriSetupScreenProps = {
   navigation?: any;
 };
 
-export type ChatProps = {};
+export type ChatProps = {
+  navigation?: any; 
+};
+
+export type ChatDetailProps = {
+  navigation: any;
+  route: {
+    params: {
+      chatId: string;
+      contactName: string;
+      contactAvatar: any;
+      isActive?: boolean;
+    };
+  };
+};

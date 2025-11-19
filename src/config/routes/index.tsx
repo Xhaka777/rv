@@ -39,5 +39,7 @@ export const RouteNames = {
     HeadsUpSettings: 'HeadsUpSettings',
     ThreatReportScreen: 'ThreatReportScreen',
     SiriSetupScreen: 'SiriSetupScreenProps',
+    Chat: 'Chat',
+    ChatDetail: 'ChatDetail',
   },
 };

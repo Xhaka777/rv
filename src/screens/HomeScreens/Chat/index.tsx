@@ -1,330 +1,267 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  SafeAreaView,
-  Alert,
+    View,
+    StyleSheet,
+    FlatList,
+    TouchableOpacity,
+    TextInput,
+    SafeAreaView,
+    Alert,
+    Image,
+    Text,
 } from 'react-native';
 import { CustomText } from '../../../components';
 import { Metrix, Utills, Images } from '../../../config';
 import { ChatProps } from '../../propTypes';
+import { Search } from 'lucide-react-native';
 
-interface ChatMessage {
-  id: string;
-  senderId: string;
-  senderName: string;
-  message: string;
-  timestamp: Date;
-  isMe: boolean;
+interface ChatItemData {
+    id: string;
+    name: string;
+    message: string;
+    time: string;
+    avatar: any;
+    unreadCount: number;
+    isActive: boolean;
 }
 
-interface ChatContact {
-  id: string;
-  name: string;
-  lastMessage: string;
-  timestamp: Date;
-  unreadCount: number;
-}
-
-export const Chat: React.FC<ChatProps> = ({ }) => {
-  const [activeTab, setActiveTab] = useState<'contacts' | 'messages'>('contacts');
-  const [selectedContact, setSelectedContact] = useState<ChatContact | null>(null);
-  const [messageText, setMessageText] = useState('');
-  const [contacts, setContacts] = useState<ChatContact[]>([
+// Mock data for chat messages
+const mockChatData: ChatItemData[] = [
     {
-      id: '1',
-      name: 'Sarah Johnson',
-      lastMessage: 'Are you safe?',
-      timestamp: new Date(),
-      unreadCount: 2,
+        id: '1',
+        name: 'Sarah Johnson',
+        message: 'See you tomorrow! 👋',
+        time: '6m',
+        avatar: Images.AddFriend,
+        unreadCount: 2,
+        isActive: true,
     },
     {
-      id: '2',
-      name: 'Mike Wilson',
-      lastMessage: 'Checking in on you',
-      timestamp: new Date(Date.now() - 3600000),
-      unreadCount: 0,
+        id: '2',
+        name: 'Mike Chen',
+        message: 'Thanks for your help!',
+        time: '2h',
+        avatar: Images.AddFriend,
+        unreadCount: 0,
+        isActive: true,
     },
-  ]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+    {
+        id: '3',
+        name: 'Emily Davis',
+        message: 'Sounds good to me!',
+        time: '1d',
+        avatar: Images.AddFriend,
+        unreadCount: 0,
+        isActive: true,
+    },
+    {
+        id: '4',
+        name: 'Alex Thompson',
+        message: 'Check out this article!',
+        time: '2d',
+        avatar: Images.AddFriend,
+        unreadCount: 0,
+        isActive: true,
+    },
+    {
+        id: '5',
+        name: 'Jessica Lee',
+        message: 'Great presentation today!',
+        time: '3d',
+        avatar: Images.AddFriend,
+        unreadCount: 1,
+        isActive: true,
+    },
+];
 
-  const handleSendMessage = useCallback(() => {
-    if (messageText.trim() && selectedContact) {
-      const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        senderId: 'me',
-        senderName: 'Me',
-        message: messageText.trim(),
-        timestamp: new Date(),
-        isMe: true,
-      };
-      
-      setMessages(prev => [...prev, newMessage]);
-      setMessageText('');
-    }
-  }, [messageText, selectedContact]);
+export const Chat: React.FC<ChatProps> = ({ navigation }) => {
+    const [searchText, setSearchText] = useState('');
+    const [chatList, setChatList] = useState(mockChatData);
 
-  const renderContactItem = ({ item }: { item: ChatContact }) => (
-    <TouchableOpacity 
-      style={styles.contactItem}
-      onPress={() => {
-        setSelectedContact(item);
-        setActiveTab('messages');
-      }}
-    >
-      <View style={styles.contactAvatar}>
-        <CustomText.RegularText customStyle={styles.avatarText}>
-          {item.name.charAt(0).toUpperCase()}
-        </CustomText.RegularText>
-      </View>
-      <View style={styles.contactInfo}>
-        <CustomText.MediumText customStyle={styles.contactName}>
-          {item.name}
-        </CustomText.MediumText>
-        <CustomText.SmallText customStyle={styles.lastMessage}>
-          {item.lastMessage}
-        </CustomText.SmallText>
-      </View>
-      {item.unreadCount > 0 && (
-        <View style={styles.unreadBadge}>
-          <CustomText.SmallText customStyle={styles.unreadText}>
-            {item.unreadCount}
-          </CustomText.SmallText>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+    const handleChatPress = useCallback((chatId: string) => {
+        const selectedChat = chatList.find(chat => chat.id === chatId);
+        if (selectedChat && navigation) {
+            navigation.navigate('ChatDetail', {
+                chatId: selectedChat.id,
+                contactName: selectedChat.name,
+                contactAvatar: selectedChat.avatar,
+                isActive: selectedChat.isActive,
+            });
+        } else {
+            Alert.alert('Chat Selected', `Opening chat with ID: ${chatId}`);
+        }
+    }, [chatList, navigation]);
 
-  const renderMessageItem = ({ item }: { item: ChatMessage }) => (
-    <View style={[
-      styles.messageItem,
-      item.isMe ? styles.myMessage : styles.theirMessage
-    ]}>
-      <CustomText.RegularText customStyle={[
-        styles.messageText,
-        item.isMe ? styles.myMessageText : styles.theirMessageText
-      ]}>
-        {item.message}
-      </CustomText.RegularText>
-      <CustomText.SmallText customStyle={styles.messageTime}>
-        {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-      </CustomText.SmallText>
-    </View>
-  );
+    const handleSearch = useCallback((text: string) => {
+        setSearchText(text);
+        if (text.trim() === '') {
+            setChatList(mockChatData);
+        } else {
+            const filtered = mockChatData.filter(chat =>
+                chat.name.toLowerCase().includes(text.toLowerCase()) ||
+                chat.message.toLowerCase().includes(text.toLowerCase())
+            );
+            setChatList(filtered);
+        }
+    }, []);
 
-  if (activeTab === 'messages' && selectedContact) {
+    const renderChatItem = useCallback(({ item }: { item: ChatItemData }) => (
+        <TouchableOpacity
+            style={styles.chatItem}
+            onPress={() => handleChatPress(item.id)}
+            activeOpacity={0.7}
+        >
+            <View style={styles.avatarContainer}>
+                <Image source={item.avatar} style={styles.avatar} />
+            </View>
+
+            <View style={styles.chatContent}>
+                <View style={styles.chatHeader}>
+                    <Text style={styles.contactName}>{item.name}</Text>
+                    <Text style={styles.timeText}>{item.time}</Text>
+                </View>
+                <Text style={styles.messagePreview} numberOfLines={1}>
+                    {item.message}
+                </Text>
+            </View>
+
+            {item.unreadCount > 0 && (
+                <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadText}>{item.unreadCount}</Text>
+                </View>
+            )}
+        </TouchableOpacity>
+    ), [handleChatPress]);
+
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => {
-              setActiveTab('contacts');
-              setSelectedContact(null);
-            }}
-          >
-            <CustomText.RegularText customStyle={styles.backButton}>
-              ← Back
-            </CustomText.RegularText>
-          </TouchableOpacity>
-          <CustomText.MediumText customStyle={styles.headerTitle}>
-            {selectedContact.name}
-          </CustomText.MediumText>
-        </View>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Messages</Text>
+            </View>
 
-        <FlatList
-          data={messages}
-          renderItem={renderMessageItem}
-          keyExtractor={(item) => item.id}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-        />
+            <View style={styles.searchContainer}>
+                <View style={styles.searchInputContainer}>
+                    <Search size={24} color={"#666"} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search messages..."
+                        placeholderTextColor="#999"
+                        value={searchText}
+                        onChangeText={handleSearch}
+                    />
+                </View>
+            </View>
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.messageInput}
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder="Type a message..."
-            placeholderTextColor={Utills.selectedThemeColors().SecondaryTextColor}
-            multiline
-          />
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={handleSendMessage}
-          >
-            <CustomText.RegularText customStyle={styles.sendButtonText}>
-              Send
-            </CustomText.RegularText>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+            <FlatList
+                data={chatList}
+                keyExtractor={(item) => item.id}
+                renderItem={renderChatItem}
+                style={styles.chatList}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.chatListContainer}
+            />
+        </SafeAreaView>
     );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <CustomText.LargeBoldText customStyle={styles.headerTitle}>
-          Messages
-        </CustomText.LargeBoldText>
-      </View>
-
-      <FlatList
-        data={contacts}
-        renderItem={renderContactItem}
-        keyExtractor={(item) => item.id}
-        style={styles.contactsList}
-        contentContainerStyle={styles.contactsContent}
-      />
-    </SafeAreaView>
-  );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Utills.selectedThemeColors().Base,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Metrix.HorizontalSize(20),
-    paddingVertical: Metrix.VerticalSize(15),
-    borderBottomWidth: 1,
-    borderBottomColor: Utills.selectedThemeColors().Base,
-  },
-  headerTitle: {
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-    fontSize: Metrix.customFontSize(20),
-    flex: 1,
-    textAlign: 'center',
-  },
-  backButton: {
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-    fontSize: Metrix.customFontSize(16),
-  },
-  contactsList: {
-    flex: 1,
-  },
-  contactsContent: {
-    paddingVertical: Metrix.VerticalSize(10),
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Metrix.HorizontalSize(20),
-    paddingVertical: Metrix.VerticalSize(15),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  contactAvatar: {
-    width: Metrix.HorizontalSize(50),
-    height: Metrix.VerticalSize(50),
-    borderRadius: Metrix.HorizontalSize(25),
-    backgroundColor: Utills.selectedThemeColors().Yellow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Metrix.HorizontalSize(15),
-  },
-  avatarText: {
-    color: Utills.selectedThemeColors().Base,
-    fontSize: Metrix.customFontSize(18),
-    fontWeight: '600',
-  },
-  contactInfo: {
-    flex: 1,
-  },
-  contactName: {
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-    fontSize: Metrix.customFontSize(16),
-    marginBottom: Metrix.VerticalSize(5),
-  },
-  lastMessage: {
-    color: Utills.selectedThemeColors().SecondaryTextColor,
-    fontSize: Metrix.customFontSize(14),
-  },
-  unreadBadge: {
-    backgroundColor: Utills.selectedThemeColors().Red,
-    borderRadius: Metrix.HorizontalSize(10),
-    paddingHorizontal: Metrix.HorizontalSize(8),
-    paddingVertical: Metrix.VerticalSize(4),
-    minWidth: Metrix.HorizontalSize(20),
-    alignItems: 'center',
-  },
-  unreadText: {
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-    fontSize: Metrix.customFontSize(12),
-    fontWeight: '600',
-  },
-  messagesList: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingVertical: Metrix.VerticalSize(10),
-  },
-  messageItem: {
-    marginHorizontal: Metrix.HorizontalSize(20),
-    marginVertical: Metrix.VerticalSize(5),
-    maxWidth: '80%',
-    padding: Metrix.HorizontalSize(12),
-    borderRadius: Metrix.HorizontalSize(12),
-  },
-  myMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: Utills.selectedThemeColors().Yellow,
-  },
-  theirMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  messageText: {
-    fontSize: Metrix.customFontSize(16),
-    marginBottom: Metrix.VerticalSize(5),
-  },
-  myMessageText: {
-    color: Utills.selectedThemeColors().Base,
-  },
-  theirMessageText: {
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-  },
-  messageTime: {
-    fontSize: Metrix.customFontSize(12),
-    opacity: 0.7,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: Metrix.HorizontalSize(20),
-    paddingVertical: Metrix.VerticalSize(15),
-    borderTopWidth: 1,
-    borderTopColor: Utills.selectedThemeColors().Base,
-  },
-  messageInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Utills.selectedThemeColors().Base,
-    borderRadius: Metrix.HorizontalSize(20),
-    paddingHorizontal: Metrix.HorizontalSize(15),
-    paddingVertical: Metrix.VerticalSize(10),
-    color: Utills.selectedThemeColors().PrimaryTextColor,
-    fontSize: Metrix.customFontSize(16),
-    maxHeight: Metrix.VerticalSize(100),
-    marginRight: Metrix.HorizontalSize(10),
-  },
-  sendButton: {
-    backgroundColor: Utills.selectedThemeColors().Yellow,
-    paddingHorizontal: Metrix.HorizontalSize(20),
-    paddingVertical: Metrix.VerticalSize(10),
-    borderRadius: Metrix.HorizontalSize(20),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendButtonText: {
-    color: Utills.selectedThemeColors().Base,
-    fontSize: Metrix.customFontSize(16),
-    fontWeight: '600',
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#000000',
+    },
+    searchContainer: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+    },
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F5F5F5',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        height: 45,
+    },
+    searchIcon: {
+        width: 18,
+        height: 18,
+        marginRight: 10,
+        tintColor: '#999',
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#000',
+        marginLeft: 8,
+    },
+    chatList: {
+        flex: 1,
+    },
+    chatListContainer: {
+        paddingBottom: 20,
+    },
+    chatItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    avatarContainer: {
+        marginRight: 15,
+    },
+    avatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#E0E0E0',
+    },
+    chatContent: {
+        flex: 1,
+    },
+    chatHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    contactName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#000000',
+    },
+    timeText: {
+        fontSize: 14,
+        color: '#999',
+    },
+    messagePreview: {
+        fontSize: 14,
+        color: '#666',
+        lineHeight: 20,
+    },
+    unreadBadge: {
+        backgroundColor: '#000000',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 10,
+    },
+    unreadText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '600',
+    },
 });
