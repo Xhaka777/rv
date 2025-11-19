@@ -101,6 +101,12 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const animationRef = useRef(null);
+  const lastModeSwitch = useRef<number>(0);
+  const secondCameraInitialized = useRef<boolean>(false);
+  const hasInitializedOnce = useRef(false);
+  const rtcInitRef = useRef(false);
+
+
 
   const isFocus = useIsFocused();
   const layout = useWindowDimensions();
@@ -245,11 +251,50 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     }, [fetchTrustedContacts])
   );
 
-  // Define gesture for horizontal swiping
-  const switchMode = (newMode: 'AUDIO' | 'VIDEO') => {
-    console.log('LiveStream - switching to mode:', newMode);
-    setMode(newMode);
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🎥 LiveStream Focused — showing video");
 
+      // Prevent initialize logic from firing twice on first mount
+      if (!hasInitializedOnce.current) {
+        hasInitializedOnce.current = true;
+      }
+
+      if (engine) {
+        // Simply unmute to resume view
+        engine.muteLocalVideoStream(false);
+
+        // Ensure secondary camera is initialized once
+        if (!secondCameraInitialized.current) {
+          startSecondCameraCapture();
+        }
+      }
+
+      return () => {
+        console.log("🚪 LiveStream Unfocused — hiding video");
+
+        if (engine) {
+          // DO NOT destroy preview, just hide it
+          engine.muteLocalVideoStream(true);
+        }
+      };
+    }, [engine])
+  );
+
+  const switchMode = (newMode: 'AUDIO' | 'VIDEO') => {
+    const now = Date.now();
+
+    // 🛑 Debounce fast swipes (under 700ms)
+    if (now - lastModeSwitch.current < 700) {
+      console.log('⛔ Prevent double mode switch (too fast)');
+      return;
+    }
+    lastModeSwitch.current = now;
+
+    console.log('LiveStream - switching to mode:', newMode);
+
+    // ✅ Keep your existing state updates
+    setMode(newMode);
     dispatch(HomeActions.setCameraMode(newMode));
 
     const newIndex = newMode === 'AUDIO' ? 0 : 1;
@@ -258,15 +303,29 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       stiffness: 200,
     });
 
-    // Update eye/ear state based on mode
+    // 🎥 NEW: only mute/unmute video instead of tearing cameras down
+    if (engine) {
+      if (newMode === 'AUDIO') {
+        console.log('🎛 [switchMode] Muting local video for AUDIO mode');
+        engine.muteLocalVideoStream(true);
+      } else {
+        console.log('🎛 [switchMode] Unmuting local video + ensuring secondary camera for VIDEO mode');
+        engine.muteLocalVideoStream(false);
+        // Ensure secondary/front camera is initialized once
+        startSecondCameraCapture();
+      }
+    }
+
+    // ✅ Keep your UI/UX logic
     if (newMode === 'AUDIO') {
       setEyeEarState('EAR');
-      showToastNotification('Recipients will get: Audio Stream')
+      showToastNotification('Recipients will get: Audio Stream');
     } else {
       setEyeEarState('EYE');
-      showToastNotification('Recipients will get: Video Stream')
+      showToastNotification('Recipients will get: Video Stream');
     }
   };
+
 
   useEffect(() => {
     if (siriArmTrigger) {
@@ -1117,6 +1176,14 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       console.error('appId is invalid');
       return;
     }
+
+    if (rtcInitRef.current) {
+      console.log("⚠️ Agora already initialized — skipping");
+      return;
+    }
+
+    rtcInitRef.current = true;
+
     const agoraEngine = createAgoraRtcEngine() as IRtcEngineEx;
     agoraEngine.initialize({
       appId,
@@ -1206,8 +1273,13 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     agoraEngine?.startPreview(VideoSourceType.VideoSourceCameraSecondary);
     setStartSecondCamera(true);
     agoraEngine.switchCamera();
+
+    // Mark as initialized so we don't recreate on every mode swipe
+    secondCameraInitialized.current = true;
+
     setEngine(agoraEngine);
   };
+
 
   const joinChannel = (agora_token: string, incidentId: any) => {
     const { channelId, token, uid } = state;
@@ -1301,7 +1373,15 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   };
 
   const startSecondCameraCapture = async () => {
-    if (startSecondCamera) return;
+    // 🛡 Prevent re-initializing the secondary camera over and over
+    if (secondCameraInitialized.current) {
+      console.log('🔄 Secondary camera already initialized - skipping recreation');
+      return;
+    }
+
+    console.log('📹 [startSecondCameraCapture] Initializing secondary/front camera');
+
+    // Keep your original behavior
     engine?.switchCamera();
     engine?.enableMultiCamera(true, { cameraDirection: 0 });
     engine?.startCameraCapture(VideoSourceType.VideoSourceCameraSecondary, {
@@ -1310,7 +1390,10 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     engine?.startPreview(VideoSourceType.VideoSourceCameraSecondary);
     setStartSecondCamera(true);
     engine?.switchCamera();
+
+    secondCameraInitialized.current = true;
   };
+
 
   const publishSecondCameraToStream = (agora_token: string, incidentId: any) => {
     console.log('📹 [publishSecondCamera] Setting up secondary camera stream...');

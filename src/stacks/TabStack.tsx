@@ -114,9 +114,6 @@ export const TabStack: React.FC = () => {
   const tabState = navigationState?.routes?.[navigationState.index]?.state;
 
   const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'LiveStream';
-  console.log('Full navigation state:', navigationState);
-  console.log('Navigation index:', navigationState?.index);
-  console.log('Current route:', navigationState?.routes?.[navigationState.index]);
 
   const threatAlertMode = useSelector((state: RootState) => state.home.threatAlertMode);
   const headsUpRadius = useSelector((state: RootState) => state.home.headsUpRadius || 3);
@@ -149,8 +146,8 @@ export const TabStack: React.FC = () => {
   //Siri Detection...
   const [showSiriBlockedModal, setShowSiriBlockedModal] = useState(false);
 
-
-  console.log('inside the tabstack with enhanced interruption handling')
+  //
+  const isSafeWordTraining = useSelector((state: RootState) => state.home.isSafeWordTraining);
 
   const timerToMilliseconds = (timer: string): number => {
     const minutes = parseInt(timer.replace('m', ''));
@@ -164,7 +161,6 @@ export const TabStack: React.FC = () => {
 
     const duration = timerToMilliseconds(activeTimer);
     const timerId = setTimeout(() => {
-      console.log('🕒 Arming timer expired - automatically disarming');
       dispatch(HomeActions.setShowFakeLockScreen(false));
       onDisplayNotification(
         'Bodycam Timer Expired',
@@ -178,9 +174,7 @@ export const TabStack: React.FC = () => {
   useEffect(() => {
     const requestNotificationPermission = async () => {
       try {
-        console.log('🔔 Requesting notification permission on TabStack mount...');
         await notifee.requestPermission();
-        console.log('✅ Notification permission requested');
       } catch (error) {
         console.error('❌ Failed to request notification permission:', error);
       }
@@ -192,11 +186,9 @@ export const TabStack: React.FC = () => {
 
   useEffect(() => {
     const handleAppStateChange = async (nextAppState: string) => {
-      console.log('📱 App state changed to:', nextAppState);
 
       // NEW: Dismiss FakeLockScreen when app goes to background
       if (nextAppState === 'background' || nextAppState === 'inactive') {
-        console.log('📱 App went to background/inactive - dismissing FakeLockScreen');
         if (showFakeLockScreen) {
           dispatch(HomeActions.setShowFakeLockScreen(false));
         }
@@ -205,16 +197,13 @@ export const TabStack: React.FC = () => {
       if (nextAppState === 'active') {
         // App became active - check if we should have mic services running
         if (isSafeWord && !isSafeZone && !isAudioServicesSuspended) {
-          console.log('🔄 App active - checking microphone recovery...');
 
           // Small delay to let system settle
           setTimeout(async () => {
             try {
               const result = await audioSessionService.forceRecoverMicrophone();
-              console.log('🔄 Recovery result:', result);
 
               if (!result.success) {
-                console.log('❌ Recovery failed - restarting services manually');
                 // Fallback: restart services from scratch
                 await stopAllAudioServices();
                 setTimeout(() => {
@@ -222,7 +211,6 @@ export const TabStack: React.FC = () => {
                 }, 500);
               }
             } catch (error) {
-              console.error('❌ Recovery attempt failed:', error);
             }
           }, 1000);
         }
@@ -234,10 +222,8 @@ export const TabStack: React.FC = () => {
   }, [isSafeWord, isSafeZone, isAudioServicesSuspended, showFakeLockScreen, dispatch]);
 
   useEffect(() => {
-    console.log('🗣️ Setting up Hey Siri detection listener...');
 
     const heySiriListener = audioSessionService.addListener('HeySiriDetected', (event: HeySiriDetectedEvent) => {
-      console.log('🚨 HEY SIRI DETECTED WHILE APP HAS MIC!', event);
 
       // Check if app is in background/inactive
       if (AppState.currentState === 'background' || AppState.currentState === 'inactive') {
@@ -248,13 +234,11 @@ export const TabStack: React.FC = () => {
         );
       } else {
         // App is active - show modal as before
-        console.log('📱 App currently has microphone, blocking Siri activation');
         setShowSiriBlockedModal(true);
       }
     });
 
     return () => {
-      console.log('🧹 Cleaning up Hey Siri detection listener');
       heySiriListener.remove();
     };
   }, []);
@@ -263,7 +247,6 @@ export const TabStack: React.FC = () => {
     if (SiriEventEmitter) {
       const siriEmitter = new NativeEventEmitter(SiriEventEmitter);
       const sub = siriEmitter.addListener('RoveArmCommand', (data) => {
-        console.log('🚀 Siri command received in JS:', data);
         handleArmCommand(data.source || 'siri');
       });
       return () => sub.remove();
@@ -275,7 +258,6 @@ export const TabStack: React.FC = () => {
       startArmingTimer();
     } else {
       if (armingTimerId) {
-        console.log('🛑 Clearing arming timer (manual disarm)');
         clearTimeout(armingTimerId);
         setArmingTimerId(null);
       }
@@ -292,10 +274,8 @@ export const TabStack: React.FC = () => {
 
   // Deep linking
   useEffect(() => {
-    console.log('🔗 Setting up deep link listener...');
 
     const linkingSubscription = Linking.addEventListener('url', (event) => {
-      console.log('🔗 Deep link received:', event.url);
       if (event.url === 'rove://arm') {
         handleArmCommand('deeplink');
       }
@@ -313,7 +293,6 @@ export const TabStack: React.FC = () => {
   }, [dispatch]);
 
   const handleArmCommand = async (source: string) => {
-    console.log(`🚨 ARM COMMAND from ${source}!`);
     // Alert.alert('ARM COMMAND', `Received from ${source}`);
 
     // Set flag to arm when LiveStream loads
@@ -326,18 +305,14 @@ export const TabStack: React.FC = () => {
   // ENHANCED: Cleanup effect with enhanced audio session service
   useEffect(() => {
     if (isAudioStreamStopped) {
-      console.log('🔴 Audio stream stopped - cleaning up enhanced audio services');
       stopAllAudioServices();
     }
 
     return () => {
-      console.log('🧹 TabStack cleanup function called');
       if (ws.current) {
-        console.log('🔴 Closing WebSocket connection');
         ws.current.close();
         ws.current = null;
       }
-      console.log('🔴 Final cleanup - stopping all enhanced audio services');
       stopAllAudioServices();
     };
   }, []);
@@ -348,9 +323,7 @@ export const TabStack: React.FC = () => {
       await audioSessionService.stopAudioStreaming();
       await audioSessionService.stopRecording();
       await audioSessionService.stopSpeechRecognition();
-      console.log('✅ All enhanced audio services stopped');
     } catch (error) {
-      console.error('❌ Error stopping audio services:', error);
     }
   }, []);
 
@@ -378,7 +351,6 @@ export const TabStack: React.FC = () => {
 
   //  EXACT SAME STATE EFFECTS AS OLD APPROACH
   useEffect(() => {
-    console.log('🔄 isSafeWord changed from', isSafeWord, 'to', sw);
     setIsSafeWord(sw);
   }, [sw]);
 
@@ -406,61 +378,44 @@ export const TabStack: React.FC = () => {
     });
   };
 
-  console.log('safeWord', safeWord);
 
   // EXACT SAME WEBSOCKET SETUP AS OLD APPROACH
   const setupWebSocket = useCallback(() => {
-    console.log('🌐 Creating WebSocket connection to:', currentModel);
-    console.log('🔗 Will send audioNameString:', audioNameString);
 
     const socket = new WebSocket(currentModel);
 
     socket.onopen = () => {
-      console.log('✅ WebSocket connection opened successfully');
-      console.log('📤 Sending audioNameString to server:', audioNameString);
       ws.current = socket;
       ws.current.send(audioNameString);
-      console.log('✅ AudioNameString sent to server');
     };
 
     socket.onmessage = event => {
-      console.log('📨 Message received from server:', event.data);
       try {
         const parsedData = JSON.parse(event.data);
-        console.log('📊 Parsed server data:', parsedData);
 
         // 🔥 EXACT SAME APP TRIGGERED DETECTION AS OLD APPROACH
         if (parsedData.severity === 'APP triggered') {
-          console.log('🚨 APP triggered detected - starting stream');
           appTriggeredDetected();
           return; // Exit early
         }
 
         // 🔥 EXACT SAME THREAT DETECTION LOGIC AS OLD APPROACH
         if (currentModel == Environments.Models.WHISPER_AND_SENTIMENT) {
-          console.log('🧠 Using WHISPER_AND_SENTIMENT model');
           const isNegativeSentiment = parsedData?.sentiment == 'negative';
           const threatScore = parsedData?.threat_level > 0.7 ? true : false;
-          console.log('📊 Sentiment analysis:', { isNegativeSentiment, threatScore });
 
           if (isNegativeSentiment && threatScore) {
-            console.log('🚨 Threat detected via sentiment analysis');
             threatDetected();
           }
         } else {
-          console.log('🧠 Using standard threat detection model');
           const isThreat = parsedData['threat detected'];
-          console.log('🔍 Threat detection result:', isThreat);
 
           if (isThreat) {
-            console.log(`🚨 ${isThreat} is a threatening word.`);
             threatDetected();
           } else {
-            console.log('✅ No threat detected in this message');
           }
         }
       } catch (error) {
-        console.error('❌ Error parsing server message:', error);
       }
     };
 
@@ -469,7 +424,6 @@ export const TabStack: React.FC = () => {
     };
 
     socket.onclose = (event) => {
-      console.log('🔴 WebSocket connection closed. Code:', event.code, 'Reason:', event.reason);
     };
   }, [currentModel, audioNameString, isSafeZone]);
 
@@ -489,10 +443,8 @@ export const TabStack: React.FC = () => {
 
     await new Promise(async (resolve) => {
       for (let i = 0; BackgroundService.isRunning(); i++) {
-        console.log('Background task running', i);
 
         if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-          console.log('WebSocket is connected in background');
         }
 
         await BackgroundService.updateNotification({
@@ -505,11 +457,8 @@ export const TabStack: React.FC = () => {
     });
   };
 
-  // 🔥 NEW: Enhanced interruption handling functions
+  // NEW: Enhanced interruption handling functions
   const handleMicrophoneInterruption = useCallback((event: MicrophoneInterruptionEvent) => {
-    console.log('🚨 MICROPHONE INTERRUPTION:', audioSessionService.getInterruptionTypeDescription(event.type));
-    console.log('📋 Interruption details:', event);
-
     setLastInterruptionType(event.type);
 
     switch (event.type) {
@@ -523,17 +472,14 @@ export const TabStack: React.FC = () => {
 
       case 'siri_began':
         setIsAudioServicesSuspended(true);
-        console.log('🗣️ Siri detected - services will resume automatically after Siri finishes');
         break;
 
       case 'ended':
       case 'siri_ended':
         setIsAudioServicesSuspended(false);
-        console.log('✅ Services resumed after interruption');
         break;
 
       case 'failed_resume':
-        console.log('❌ Failed to resume - may need manual restart');
         Alert.alert(
           'Audio Service Issue',
           'Failed to resume audio services. Tap to restart.',
@@ -548,7 +494,6 @@ export const TabStack: React.FC = () => {
 
   const handleDebugLog = useCallback((event: MicrophoneDebugLogEvent) => {
     const formattedLog = audioSessionService.formatDebugLog(event);
-    console.log('🐛 DEBUG:', formattedLog);
 
     // Keep last 50 debug logs
     setDebugLogs(prev => [formattedLog, ...prev.slice(0, 49)]);
@@ -564,7 +509,6 @@ export const TabStack: React.FC = () => {
   }, []);
 
   const restartAudioServices = useCallback(async () => {
-    console.log('🔄 Manually restarting audio services...');
 
     try {
       // Stop all services first
@@ -577,7 +521,6 @@ export const TabStack: React.FC = () => {
       if (isSafeWord && !isSafeZone) {
         await audioSessionService.startAudioStreaming();
         await audioSessionService.startSpeechRecognition();
-        console.log('✅ Audio services restarted successfully');
       }
     } catch (error) {
       console.error('❌ Failed to restart audio services:', error);
@@ -587,15 +530,26 @@ export const TabStack: React.FC = () => {
 
   // 🔥 ENHANCED: Streaming function with enhanced audio session service
   const startStreaming = useCallback(async () => {
-    console.log('🎯 setupWebSocket called with enhanced interruption handling');
+    console.log('🎙️ Starting streaming...');
+
+    // 🔥 FIX: Stop all existing audio services first
+    try {
+      console.log('🛑 Stopping any existing audio services...');
+      await audioSessionService.stopAudioStreaming();
+      await audioSessionService.stopSpeechRecognition();
+
+      // Small delay to ensure cleanup
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error) {
+      console.log('⚠️ Error stopping existing services (may be expected):', error);
+    }
+
     setupWebSocket();
 
     // 🔥 ENHANCED: Setup enhanced audio session service with interruption handling
-    console.log('🎧 Setting up enhanced audio listeners...');
 
     // Setup enhanced audio streaming listeners
     audioSessionService.addListener('AudioStreamData', (data: AudioStreamDataEvent) => {
-      console.log('Live audio is streaming from enhanced AudioSessionService========>>> 1');
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         // Convert base64 to raw binary data like old approach
         try {
@@ -609,14 +563,9 @@ export const TabStack: React.FC = () => {
 
     // 🔥 ENHANCED: Speech recognition listener for safe word detection with interruption awareness
     audioSessionService.addListener('SpeechRecognized', (data: SpeechRecognizedEvent) => {
-      console.log('🗣️ ENHANCED SPEECH DETECTED:', data.text);
-      console.log('🎯 Current safe word:', safeWord);
-      console.log('🔍 Is speech final?', data.isFinal);
-      console.log('🔍 Are services suspended?', isAudioServicesSuspended);
 
       // Skip processing if services are suspended
       if (isAudioServicesSuspended) {
-        console.log('⚠️ Services suspended, skipping safe word detection');
         return;
       }
 
@@ -624,15 +573,9 @@ export const TabStack: React.FC = () => {
         const spokenText = data.text.toLowerCase();
         const targetSafeWord = safeWord.toLowerCase();
 
-        console.log('🔍 Comparing:', {
-          spoken: spokenText,
-          target: targetSafeWord,
-          includes: spokenText.includes(targetSafeWord)
-        });
 
         // Check if the safe word is contained in the spoken text
         if (spokenText.includes(targetSafeWord)) {
-          console.log('🚨 SAFE WORD DETECTED! Starting stream...');
           showVoiceDetectionUI(4000);
           NavigationService.navigate('LiveStream', {
             autoStartStream: true,
@@ -640,10 +583,8 @@ export const TabStack: React.FC = () => {
             detectedWord: safeWord
           });
         } else {
-          console.log('⚪ Safe word not detected in speech');
         }
       } else {
-        console.log('⚠️ Missing data:', { hasText: !!data.text, hasSafeWord: !!safeWord });
       }
     });
 
@@ -683,14 +624,28 @@ export const TabStack: React.FC = () => {
 
     // Start enhanced audio streaming
     try {
+      console.log('🎤 Starting enhanced audio streaming...');
       const streamResult = await audioSessionService.startAudioStreaming();
       if (streamResult.success) {
         console.log('✅ Enhanced audio streaming started');
       } else {
         console.error('❌ Failed to start enhanced audio streaming:', streamResult.message);
+
+        // 🔥 FIX: If it fails because already active, force stop and retry
+        if (streamResult.message?.includes('already active')) {
+          console.log('♻️ Retrying after force stop...');
+          await audioSessionService.stopAudioStreaming();
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const retryResult = await audioSessionService.startAudioStreaming();
+          if (retryResult.success) {
+            console.log('✅ Enhanced audio streaming started on retry');
+          } else {
+            throw new Error('Failed to start after retry');
+          }
+        }
       }
 
-      // 🔥 ENHANCED: Start speech recognition for safe word detection
       console.log('🗣️ Starting enhanced speech recognition for safe word detection...');
       const speechResult = await audioSessionService.startSpeechRecognition();
       if (speechResult.success) {
@@ -701,22 +656,22 @@ export const TabStack: React.FC = () => {
 
     } catch (error) {
       console.error('❌ Failed to start enhanced audio services:', error);
+      Alert.alert(
+        'Audio Service Error',
+        'Failed to start audio monitoring. Please restart the app.',
+        [{ text: 'OK' }]
+      );
     }
 
-    // Store listener for cleanup
     audioStreamRef.current = true;
 
     // 🔥 EXACT SAME MESSAGE HANDLING AS OLD APPROACH
     ws.current.onmessage = event => {
-      console.log('Message from server: Background', event.data);
       const parsedData = JSON.parse(event.data);
       const isThreat = parsedData['threat detected'];
-      console.log('Message from server:Background===', parsedData);
       if (isThreat) {
-        console.log(`${isThreat} is a threatening word.`);
         threatDetected();
       } else {
-        console.log('No threat detected.');
       }
     };
 
@@ -743,34 +698,31 @@ export const TabStack: React.FC = () => {
     } else {
       console.log('Background service is not active.');
     }
-  }, [currentModel, isSafeZone, handleMicrophoneInterruption, handleDebugLog, isAudioServicesSuspended]);
+  }, [currentModel, isSafeZone, handleMicrophoneInterruption, handleDebugLog, isAudioServicesSuspended, safeWord]);
 
-  // 🔥 EXACT SAME MAIN EFFECT AS OLD APPROACH
   useEffect(() => {
-    console.log('📋 Main effect triggered with enhanced interruption handling conditions:', {
-      isSafeWord,
-      isSafeZone,
-      currentModel,
-      safeWord,
-      audioNameString,
-      isAudioServicesSuspended
-    });
-
-    if (isSafeWord && !isSafeZone) {
-      console.log('✅ Conditions met - starting enhanced streaming...');
+    if (isSafeWord && !isSafeZone && !isSafeWordTraining) {
+      console.log('✅ Starting streaming - all conditions met');
       startStreaming();
     } else {
-      console.log('❌ Conditions not met - skipping enhanced streaming');
-      console.log('  - isSafeWord:', isSafeWord);
-      console.log('  - isSafeZone:', isSafeZone);
+      console.log('⏸️ Not starting streaming:', {
+        isSafeWord,
+        isSafeZone,
+        isSafeWordTraining
+      });
+
+      // Stop services if training mode is active
+      if (isSafeWordTraining) {
+        console.log('🎓 Training mode active - stopping audio services');
+        stopAllAudioServices();
+      }
     }
 
     // Cleanup function for enhanced audio session service
     return () => {
-      console.log('🧹 Cleaning up enhanced audio session listeners');
       audioSessionService.removeAllListeners();
     };
-  }, [startStreaming, isSafeWord, isSafeZone]);
+  }, [startStreaming, isSafeWord, isSafeZone, isSafeWordTraining, stopAllAudioServices]);
 
   // Voice detection UI
   const showVoiceDetectionUI = (duration: number = 3000) => {
@@ -912,7 +864,6 @@ export const TabStack: React.FC = () => {
             customStyles={{ borderRadius: 10 }}
             width={'45%'}
             onPress={() => {
-              console.log('🚨 User confirmed threat - starting stream...');
               setIsVisible(false);
               onDisplayNotification('A New Threat Detected', 'Start your live stream now');
               NavigationService.navigate('LiveStream', { triggerFunction: true });
@@ -923,7 +874,6 @@ export const TabStack: React.FC = () => {
             width={'45%'}
             customStyles={{ borderRadius: 10 }}
             onPress={() => {
-              console.log('✅ User denied threat - closing modal');
               setIsVisible(false);
             }}
           />
@@ -963,7 +913,6 @@ export const TabStack: React.FC = () => {
                 customStyles={{ borderRadius: 10 }}
                 width={'60%'}
                 onPress={() => {
-                  console.log('User acknowledged Siri blocking');
                   setShowSiriBlockedModal(false);
                 }}
               />
@@ -977,7 +926,6 @@ export const TabStack: React.FC = () => {
         isListening={voiceUIState === 'listening'}
         audioLevel={audioLevel}
         onAnimationComplete={() => {
-          console.log('Voice UI animation completed');
           setShowVoiceUI(false);
         }}
       />

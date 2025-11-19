@@ -120,7 +120,7 @@ export const SafeWord: React.FC<SafeWordProps> = ({ route }) => {
     NavigationService.navigate('SafeWordTraining', {
       isUpdate: true,
       skipCalibration: true,
-      isFirstTime: false
+      isFirstTime: false,
     });
   };
 

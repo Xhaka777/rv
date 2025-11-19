@@ -26,6 +26,7 @@ interface AppState {
   showCountdownFromSiri: boolean,
   siriArmTrigger: boolean,
   shouldArmOnLivestream: boolean,
+  isSafeWordTraining?: boolean;
 
   //
   headsUpfirstTime?: boolean;
@@ -65,6 +66,7 @@ const initialState: ImmutableObject<AppState> = Immutable<AppState>({
   showCountdownFromSiri: false,
   siriArmTrigger: false,
   shouldArmOnLivestream: false,
+  isSafeWordTraining: false,
 
   //
   headsUpfirstTime: true,
@@ -215,6 +217,12 @@ export default (state = initialState, action: { type: any; payload: any }) => {
     case Action.SET_SHOULD_ARM_ON_LIVESTREAM: {
       return Immutable(state).merge({
         shouldArmOnLivestream: action.payload,
+      });
+    }
+
+    case Action.SET_IS_SAFE_WORD_TRAINING: {
+      return Immutable(state).merge({
+        isSafeWordTraining: action.payload,
       });
     }
 

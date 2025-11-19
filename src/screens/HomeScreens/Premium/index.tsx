@@ -142,14 +142,11 @@ export const Premium: React.FC<PremiumProps> = ({ }) => {
         {/* Header */}
         <View style={styles.headerContainer}>
           <View style={styles.headerIcon}>
-            <RoundImageContainer
-              source={Images.Premium}
-              circleWidth={28}
-              backgroundColor="transparent"
-              imageStyle={{
-                tintColor: Utills.selectedThemeColors().PrimaryTextColor,
-              }}
-            />
+        <Image
+          source={Images.Premium}
+          style={styles.settingsIcon}
+          resizeMode="contain"
+        />
           </View>
           <CustomText.LargeBoldText customStyle={styles.headerTitle}>
             Premium
@@ -190,6 +187,12 @@ const styles = StyleSheet.create({
   },
   headerIcon: {
     marginRight: Metrix.HorizontalSize(5),
+  },
+  settingsIcon: {
+    width: Metrix.HorizontalSize(28),
+    height: Metrix.VerticalSize(28),
+    tintColor: Utills.selectedThemeColors().PrimaryTextColor,
+    // marginRight: Metrix.HorizontalSize(5),
   },
   headerTitle: {
     fontSize: Metrix.customFontSize(18),

@@ -23,6 +23,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { HomeActions } from '../../../redux/actions';
 import { RootState } from '../../../redux/reducers';
 // import { AudioRecordingService } from '../../../services/audioRecording';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -136,7 +138,7 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
     if (isFirstTime) {
       return 'setup'; // First time users start with setup
     } else if (isUpdate && skipCalibration) {
-      return 'safeWordSetup'; // Existing users updating safe word skip to safe word setup
+      return 'safeWordRecording'; // 🔥 CHANGED: Go directly to recording screen for updates
     } else {
       return 'setup'; // Default to setup
     }
@@ -168,6 +170,8 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
   // Safe word recording states
   const [recordedSafeWord, setRecordedSafeWord] = useState('');
   const [isSafeWordRecording, setIsSafeWordRecording] = useState(false);
+  const [shouldAutoStartRecording, setShouldAutoStartRecording] = useState(false);
+
 
   // NEW: Cloud recording state (no UI indicators, just internal tracking)
   // const [isCloudRecording, setIsCloudRecording] = useState(false);
@@ -184,6 +188,13 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
 
   const [pendingSafeWordText, setPendingSafeWordText] = useState('');
   const pendingSafeWordTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const {
+    // isUpdate = false,
+    // isFirstTime = false,
+    // skipCalibration = false,
+    resetTimestamp
+  } = route?.params || {};
 
   // NEW: Function to handle cloud recording seamlessly
   // const triggerCloudRecording = async () => {
@@ -231,6 +242,136 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
       return false;
     }
   };
+
+  useEffect(() => {
+    if (resetTimestamp) {
+      console.log('🔄 FULL RESET triggered by resetTimestamp:', resetTimestamp);
+
+      // Reset all recording state
+      setRecordedSafeWord('');
+      setPendingSafeWordText('');
+      setIsSafeWordRecording(false);
+      setIsListening(false);
+
+      // Force screen to safeWordRecording
+      if (isUpdate && skipCalibration) {
+        setCurrentScreen('safeWordRecording');
+        // Set flag to auto-start
+        setTimeout(() => {
+          setShouldAutoStartRecording(true);
+        }, 300);
+      }
+    }
+  }, [resetTimestamp]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Screen focused - timestamp:', Date.now());
+
+      if (isUpdate && skipCalibration && !isSafeWordRecording) { // 🔥 ADD: Check not already recording
+        console.log('🔄 UPDATE MODE: Triggering auto-start');
+
+        // Small delay to ensure blur cleanup completed
+        setTimeout(() => {
+          if (!isSafeWordRecording) { // 🔥 ADD: Double check
+            setShouldAutoStartRecording(true);
+          } else {
+            console.log('⚠️ Recording already active, skipping focus trigger');
+          }
+        }, 500);
+      }
+
+      return () => {
+        console.log('Screen unfocusing');
+      };
+    }, [isUpdate, skipCalibration, isSafeWordRecording]) // 🔥 ADD: isSafeWordRecording dependency
+  );
+
+  useEffect(() => {
+    if (shouldAutoStartRecording && currentScreen === 'safeWordRecording' && !isSafeWordRecording) {
+      console.log('🎤 Auto-starting safe word recording for update mode');
+
+      const autoStartTimer = setTimeout(() => {
+        // 🔥 ADD: Double-check state before starting
+        if (!isSafeWordRecording) {
+          startSafeWordListening();
+        } else {
+          console.log('⚠️ Recording already active, skipping auto-start');
+        }
+        setShouldAutoStartRecording(false);
+      }, 2500);
+
+      return () => {
+        clearTimeout(autoStartTimer);
+      };
+    }
+  }, [shouldAutoStartRecording, currentScreen, isSafeWordRecording]); // 🔥 ADD: isSafeWordRecording dependency
+
+  useEffect(() => {
+    console.log('🎓 Entering SafeWordTraining - setting training flag');
+
+    // Set training flag to pause TabStack's microphone
+    dispatch(HomeActions.setIsSafeWordTraining(true));
+
+    return () => {
+      console.log('🎓 Leaving SafeWordTraining - clearing training flag');
+
+      // Clear training flag to resume TabStack's microphone
+      dispatch(HomeActions.setIsSafeWordTraining(false));
+    };
+  }, [dispatch]);
+
+
+  useEffect(() => {
+    if (isUpdate && skipCalibration) {
+      console.log('🔄 IMMEDIATE RESET: Clearing safe word recording state');
+      setRecordedSafeWord('');
+      setPendingSafeWordText('');
+      setIsSafeWordRecording(false);
+    }
+  }, [isUpdate, skipCalibration]);
+
+  // 🔥 IMPROVED: Clean up when leaving screen
+  useEffect(() => {
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      console.log('🧹 Screen blur - COMPLETE cleanup');
+
+      // Stop all voice services first
+      const cleanup = async () => {
+        try {
+          const isRecognizing = await Voice.isRecognizing();
+          if (isRecognizing) {
+            await Voice.stop();
+          }
+          await Voice.destroy();
+        } catch (error) {
+          console.error('Error in blur cleanup:', error);
+        }
+      };
+      cleanup();
+
+      // Reset ALL state to initial values
+      setRecordedSafeWord('');
+      setPendingSafeWordText('');
+      setIsSafeWordRecording(false);
+      setIsListening(false);
+      setShouldAutoStartRecording(false);
+      setVoiceVolume(0);
+      setIsSpeechDetected(false);
+      setRecognizedText('');
+
+      // Reset screen to initial state based on params
+      if (isUpdate && skipCalibration) {
+        setCurrentScreen('safeWordRecording');
+      } else if (isFirstTime) {
+        setCurrentScreen('setup');
+      }
+
+      console.log('✅ Complete blur cleanup finished');
+    });
+
+    return unsubscribeBlur;
+  }, [navigation, isUpdate, skipCalibration, isFirstTime]);
 
   // Auto-progression effect for success screen
   useEffect(() => {
@@ -309,6 +450,14 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
     console.log('Storing original safe word:', currentSafeWord);
     setOriginalSafeWord(currentSafeWord);
 
+    // 🔥 NEW: Reset recording state when in update mode
+    if (isUpdate && skipCalibration) {
+      console.log('Update mode: Resetting recording state for fresh safe word');
+      setRecordedSafeWord('');
+      setPendingSafeWordText('');
+      setIsSafeWordRecording(false);
+    }
+
     // 🔑 PAUSE WebSocket audio streaming during training
     console.log('Pausing WebSocket audio streaming during safe word training');
     dispatch(HomeActions.setSafeWord({ isSafeWord: false, safeWord: currentSafeWord }));
@@ -320,20 +469,38 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
     }
 
     return () => {
-      // Clean up voice
-      if (isListening) {
-        Voice.stop().catch(console.error);
-      }
-      Voice.destroy().then(Voice.removeAllListeners);
+      // FIX: Comprehensive cleanup
+      console.log('🧹 SafeWordTraining cleanup starting...');
 
-      // Clear timers
+      // Clean up voice
+      const cleanup = async () => {
+        try {
+          if (isListening || isSafeWordRecording) {
+            await Voice.stop();
+          }
+          await Voice.destroy();
+          Voice.removeAllListeners();
+        } catch (error) {
+          console.error('Error in voice cleanup:', error);
+        }
+      };
+
+      cleanup();
+
+      // Clear ALL timers
       if (autoProgressTimerRef.current) {
         clearTimeout(autoProgressTimerRef.current);
+        autoProgressTimerRef.current = null;
       }
 
-      console.log('SafeWordTraining component unmounting - safe word should already be updated');
+      if (pendingSafeWordTimeoutRef.current) {
+        clearTimeout(pendingSafeWordTimeoutRef.current);
+        pendingSafeWordTimeoutRef.current = null;
+      }
+
+      console.log('✅ SafeWordTraining cleanup complete');
     };
-  }, [dispatch, currentScreen]);
+  }, [dispatch, currentScreen]); // Keep dependencies as is
 
   // Voice Recognition Setup with enhancements
   useEffect(() => {
@@ -455,7 +622,16 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
         voiceTimeoutRef.current = null;
       }
 
-      if (e.error?.message !== 'No speech input' && e.error?.code !== '7') {
+      // 🔥 EXPANDED: Handle more "no speech" error cases that should be ignored
+      const isNoSpeechError =
+        e.error?.message === 'No speech input' ||
+        e.error?.code === '7' ||
+        e.error?.code === '111' || // 🔥 ADD: This is your specific error
+        e.error?.message?.includes('No speech detected') ||
+        e.error?.message?.includes('111'); // 🔥 ADD: Handle message containing 111
+
+      if (!isNoSpeechError) {
+        // Only show alert for real errors, not "no speech" errors
         console.log('Showing error alert to user');
         Alert.alert('Voice Recognition Error', `Failed to recognize speech: ${e.error?.message || 'Unknown error'}. Please try again.`);
         if (currentScreen === 'safeWordRecording') {
@@ -464,7 +640,8 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
           setIsListening(false);
         }
       } else {
-        console.log('No speech input detected - continuing to listen');
+        console.log('No speech input detected (code/message ignored) - continuing to listen');
+        // Don't show alert or stop listening for "no speech" errors
       }
     };
 
@@ -641,7 +818,6 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
     }, 1500); // Wait 1.5 seconds to ensure completeness
   };
 
-  // In src/screens/HomeScreens/SafeWordTraining/index.tsx
   const processCompleteSafeWord = (spokenText: string) => {
     console.log('Processing complete safe word:', spokenText);
 
@@ -651,13 +827,11 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
       pendingSafeWordTimeoutRef.current = null;
     }
 
-    // ✅ KEEP THE FULL SENTENCE - just clean it up
     const safeWordSentence = spokenText.toLowerCase()
-      .replace(/[.,!?]/g, '') // Remove punctuation
-      .trim() // Remove extra spaces
-      .replace(/\s+/g, ' '); // Replace multiple spaces with single space
+      .replace(/[.,!?]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ');
 
-    // Validate it's not empty and has reasonable length
     if (safeWordSentence.length === 0) {
       console.log('Empty safe word, ignoring...');
       return;
@@ -666,11 +840,9 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
     console.log('Full safe word sentence:', safeWordSentence);
     setRecordedSafeWord(safeWordSentence);
 
-    // Stop recording and show completion
     setTimeout(() => {
       stopSafeWordListening();
 
-      // Show success and save the safe word
       Alert.alert(
         'Safe Word Recorded',
         `Your safe word "${safeWordSentence}" has been recorded successfully.`,
@@ -678,17 +850,57 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
           {
             text: 'Continue',
             onPress: async () => {
+              // 🔥 FIX: Stop all audio services BEFORE saving
+              try {
+                console.log('🛑 Stopping all audio services before saving safe word...');
+                await Voice.stop();
+                await Voice.destroy();
+
+                // Small delay to ensure cleanup
+                await new Promise(resolve => setTimeout(resolve, 300));
+              } catch (error) {
+                console.error('Error stopping voice services:', error);
+              }
+
               // Save the FULL SENTENCE to storage and Redux
               const saved = await saveSafeWordToStorage(safeWordSentence);
 
               if (saved) {
-                console.log('Full sentence safe word saved:', safeWordSentence);
-                setCurrentScreen('finalSuccess');
+                console.log('✅ Full sentence safe word saved:', safeWordSentence);
 
-                // Auto-navigate after 3 seconds
+                // 🔥 NEW APPROACH: Navigate immediately, no finalSuccess screen
+                console.log('🔙 Navigating back to Settings immediately...');
+
+                // Add small delay to ensure Redux is updated
                 setTimeout(() => {
-                  NavigationService.navigate(RouteNames.HomeRoutes.Settings)
-                }, 3000);
+                  try {
+                    // Try multiple navigation methods
+                    console.log('📍 Attempting navigation.goBack()...');
+                    NavigationService.navigate('Settings');
+                    console.log('✅ navigation.goBack() called successfully');
+                  } catch (error) {
+                    console.error('❌ navigation.goBack() failed:', error);
+
+                    try {
+                      console.log('📍 Attempting NavigationService.goBack()...');
+                      NavigationService.navigate('Settings');
+                      console.log('✅ NavigationService.goBack() called successfully');
+                    } catch (fallbackError) {
+                      console.error('❌ NavigationService.goBack() failed:', fallbackError);
+
+                      // Final fallback
+                      try {
+                        console.log('📍 Final attempt: NavigationService.navigate(Settings)...');
+                        NavigationService.navigate('Settings');
+                        console.log('✅ Navigate to Settings called successfully');
+                      } catch (finalError) {
+                        console.error('❌ All navigation attempts failed:', finalError);
+                        Alert.alert('Success', 'Safe word set! Please go back to Settings manually.');
+                      }
+                    }
+                  }
+                }, 500);
+
               } else {
                 Alert.alert('Error', 'Failed to save safe word. Please try again.');
               }
@@ -791,36 +1003,74 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
 
   // Safe word listening functions
   const startSafeWordListening = async () => {
+
+    if (isSafeWordRecording) {
+      console.log('⚠️ Safe word recording already in progress, skipping...');
+      return;
+    }
+
     console.log('Starting safe word recording...');
     try {
+      const isAlreadyRecognizing = await Voice.isRecognizing();
+      if (isAlreadyRecognizing) {
+        console.log('⚠️ Voice recognition already active, skipping start');
+        setIsSafeWordRecording(true); // Update state to match reality
+        return;
+      }
+
+
       if (appState !== 'active') {
         console.log('App not active, skipping safe word recording start');
         return;
       }
 
+      // 🔥 NUCLEAR OPTION: Force stop ALL voice instances
+      try {
+        console.log('🛑 FORCE STOPPING ALL VOICE INSTANCES...');
+
+        // Stop multiple times to ensure we catch everything
+        for (let i = 0; i < 3; i++) {
+          const isRecognizing = await Voice.isRecognizing();
+          console.log(`🔍 Attempt ${i + 1}: Voice.isRecognizing() = ${isRecognizing}`);
+
+          if (isRecognizing) {
+            await Voice.stop();
+            console.log(`✅ Voice.stop() called (attempt ${i + 1})`);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        // Final destroy
+        await Voice.destroy();
+        console.log('✅ Voice.destroy() completed');
+
+        // 🔥 CRITICAL: Long wait for complete cleanup
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 full seconds
+
+      } catch (error) {
+        console.error('Error in voice cleanup:', error);
+        // Still wait even on error
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
       if (isSafeWordRecording) {
-        console.log('Already recording safe word, stopping first...');
-        await stopSafeWordListening();
+        console.log('State still shows recording, resetting...');
+        setIsSafeWordRecording(false);
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       const isAvailable = await Voice.isAvailable();
       console.log('Voice recognition available:', isAvailable);
 
-      const isRecognizing = await Voice.isRecognizing();
-      if (isRecognizing) {
-        console.log('Stopping existing recognition first...');
-        await Voice.stop();
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
       Voice.removeAllListeners();
 
-      // Re-setup event listeners for safe word recording
+      // Re-setup event listeners
       if (currentScreen === 'safeWordRecording') {
         setupVoiceRecognition();
       }
 
+      console.log('🎤 Calling Voice.start()...');
       await Voice.start('en-US', {
         EXTRA_LANGUAGE_MODEL: 'LANGUAGE_MODEL_FREE_FORM',
         EXTRA_PARTIAL_RESULTS: true,
@@ -833,10 +1083,10 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
       setIsSafeWordRecording(true);
       lastSpeechTimeRef.current = Date.now();
 
-      console.log('Safe word recording started successfully');
+      console.log('✅ Safe word recording started successfully - MICROPHONE SHOULD BE ACTIVE NOW');
 
     } catch (e) {
-      console.error('Safe word Voice.start error:', e);
+      console.error('❌ Safe word Voice.start error:', e);
       setIsSafeWordRecording(false);
       Alert.alert('Voice Error', 'Could not start safe word recording. Please check microphone permissions.');
     }
@@ -1350,7 +1600,30 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
 
                 <TouchableOpacity
                   style={styles.animatedMicrophoneContainer}
-                  onPress={stopSafeWordListening}
+                  onPress={() => {
+                    console.log('🎤 Microphone button pressed - current state:', { isSafeWordRecording });
+
+                    // 🔥 IMPROVED: Check actual Voice state, not just our state
+                    Voice.isRecognizing().then(isRecognizing => {
+                      console.log('🔍 Voice.isRecognizing():', isRecognizing);
+
+                      if (isRecognizing || isSafeWordRecording) {
+                        console.log('🛑 Stopping voice recognition...');
+                        stopSafeWordListening();
+                      } else {
+                        console.log('🎤 Starting voice recognition...');
+                        startSafeWordListening();
+                      }
+                    }).catch(error => {
+                      console.error('Error checking voice state:', error);
+                      // Fallback to state-based logic
+                      if (isSafeWordRecording) {
+                        stopSafeWordListening();
+                      } else {
+                        startSafeWordListening();
+                      }
+                    });
+                  }}
                   activeOpacity={0.8}
                 >
                   <View style={[
@@ -1358,7 +1631,7 @@ const SafeWordTraining: React.FC<SafeWordTrainingProps> = ({ route, navigation }
                     recordedSafeWord && styles.completedMicButton
                   ]}>
                     <Animated.View style={iconAnimatedStyle}>
-                      {recordedSafeWord ? (
+                      {recordedSafeWord && !isUpdate ? (
                         <Text style={styles.checkmarkIcon}>✓</Text>
                       ) : (
                         <Image

@@ -660,10 +660,16 @@ class AudioSessionManager: RCTEventEmitter {
         _ resolve: @escaping RCTPromiseResolveBlock,
         rejecter reject: @escaping RCTPromiseRejectBlock
     ) {
-        guard !isStreamingAudio else {
-            reject("ALREADY_STREAMING", "Audio streaming is already active", nil)
-            return
-        }
+    if isStreamingAudio {
+        print("⚠️ [AUDIO_SESSION] Audio streaming already active - returning success")
+        sendDebugLog("Audio streaming already active - returning success to avoid crash")
+        resolve([
+            "success": true, 
+            "message": "Already streaming",
+            "isStreaming": true
+        ])
+        return
+    }
         
         do {
             try startAudioStreaming()
@@ -758,6 +764,18 @@ class AudioSessionManager: RCTEventEmitter {
             DispatchQueue.main.async {
                 guard authStatus == .authorized else {
                     reject("SPEECH_PERMISSION_DENIED", "Speech recognition permission denied", nil)
+                    return
+                }
+                
+                // 🔥 ADD THIS CHECK BEFORE starting speech recognition
+                if self?.recognitionTask != nil {
+                    print("⚠️ [AUDIO_SESSION] Speech recognition already active - returning success")
+                    self?.sendDebugLog("Speech recognition already active - returning success")
+                    resolve([
+                        "success": true,
+                        "message": "Already recognizing",
+                        "isStreaming": self?.isStreamingAudio ?? false
+                    ])
                     return
                 }
                 

@@ -25,6 +25,8 @@ export default class Action {
   static SET_SHOW_COUNTDOWN_FROM_SIRI = 'SET_SHOW_COUNTDOWN_FROM_SIRI';
   static SET_SIRI_ARM_TRIGGER = 'SET_SIRI_ARM_TRIGGER';
   static SET_SHOULD_ARM_ON_LIVESTREAM = 'SET_SHOULD_ARM_ON_LIVESTREAM';
+  static SET_IS_SAFE_WORD_TRAINING = 'SET_IS_SAFE_WORD_TRAINING';
+
   //Tutorial constants
   static SET_TUTORIAL_COMPLETED = 'SET_TUTORIAL_COMPLETED';
   static SET_TUTORIAL_STEP = 'SET_TUTORIAL_STEP';
@@ -197,6 +199,13 @@ export default class Action {
   static setShouldArmOnLivestream(payload: boolean) {
     return {
       type: Action.SET_SHOULD_ARM_ON_LIVESTREAM,
+      payload,
+    };
+  }
+
+  static setIsSafeWordTraining(payload: boolean) {
+    return {
+      type: Action.SET_IS_SAFE_WORD_TRAINING,
       payload,
     };
   }
