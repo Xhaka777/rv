@@ -32,7 +32,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { HomeAPIS } from '../../../services/home';
 import { GOOGLE_API_KEY } from '../../../services/config';
 import { normalizeFont } from '../../../config/metrix';
-import { Camera, Check, Clock, X } from 'lucide-react-native';
+import { Camera, Check, Clock, Ellipsis, X } from 'lucide-react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -153,19 +153,39 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const reportedThreat = route?.params?.reportedThreat;
   const showThreatDetails = route?.params?.showThreatDetails;
 
+  //
+  const [showMapButtonsDropdown, setShowMapButtonsDropdown] = useState(false);
+
   const [currentLocation, setCurrentLocation] = useState({
     latitude: userCoordinates?.latitude || 37.78825,
     longitude: userCoordinates?.longitude || -122.4324,
   });
   const [mapType, setMapType] = useState<any>('standard');
 
-  // Combined map buttons (HeadsUp + SafeZone)
-  const mapButtons = [
+  const mainMapButtons = [
+    {
+      id: 'addFriend',
+      image: Images.AddFriend,
+      onPress: () => {
+        console.log('object')
+      },
+    },
+    {
+      id: 'ellipsis',
+      isEllipsis: true,
+      onPress: () => {
+        setShowMapButtonsDropdown(!showMapButtonsDropdown);
+      }
+    }
+  ]
+
+  const dropdownButtons = [
     {
       id: '1',
       image: Images.Layers,
       onPress: () => {
         setMapType(mapType === 'standard' ? 'satellite' : 'standard');
+        setShowMapButtonsDropdown(false);
       },
     },
     {
@@ -174,12 +194,12 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       onPress: () => {
         console.log('SafeZone button pressed - showing popup');
         setShowSetSafeZonePopup(true);
-        setIsSafeZoneCreationMode(true); // NEW: Set SafeZone creation mode
+        setIsSafeZoneCreationMode(true);
+        setShowMapButtonsDropdown(false);
 
-        // Close FirstBottomSheet and set activeSheet to 'none'
         if (activeSheet === 'first') {
           firstBottomSheetRef.current?.close();
-          setActiveSheet('none'); // IMPORTANT: Set to 'none' to prevent automatic restoration
+          setActiveSheet('none');
         }
       },
     },
@@ -189,14 +209,13 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       onPress: () => {
         console.log('Time filter button pressed');
         if (hasCustomTimeFilter) {
-          // If user has custom filter, clicking resets to live mode
           setHasCustomTimeFilter(false);
-          setTimeFilterValue(24); // Reset to default
+          setTimeFilterValue(24);
           setShowTimeFilter(false);
         } else {
-          // Show the time filter slider
           setShowTimeFilter(!showTimeFilter);
         }
+        setShowMapButtonsDropdown(false);
       },
     },
     {
@@ -211,6 +230,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
             'There are currently no threats on the map to alert about.',
             [{ text: 'OK' }]
           );
+          setShowMapButtonsDropdown(false);
           return;
         }
 
@@ -220,6 +240,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
         }, 3000);
 
         dispatch(HomeActions.setThreatAlertMode(!threatAlertMode));
+        setShowMapButtonsDropdown(false);
       },
     },
   ];
@@ -1305,13 +1326,18 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       return;
     }
 
+    // Close dropdown if open
+    if (showMapButtonsDropdown) {
+      setShowMapButtonsDropdown(false);
+      return;
+    }
+
     // Only allow placement when selecting a threat type
     if (activeSheet === 'second' && showReportingMarker && tempThreatData) {
       const { latitude, longitude } = event.nativeEvent.coordinate;
 
       console.log("📍 Map tapped. New Threat Coordinates:", { latitude, longitude });
 
-      // Store both state + ref
       const newCoords = { latitude, longitude };
       setDraggedThreatLocation(newCoords);
       draggedThreatRef.current = newCoords;
@@ -1320,7 +1346,8 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     activeSheet,
     showReportingMarker,
     tempThreatData,
-    showTimeFilter
+    showTimeFilter,
+    showMapButtonsDropdown  // Add this dependency
   ]);
 
   const handleConfirmSafeZone = async () => {
@@ -1707,25 +1734,52 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
             (activeSheet === 'first' && firstBottomSheetSnapIndex === 0 && !showSetSafeZonePopup && !showConfirmationSheet)
           ) && !isThreatDetailsOpen && (
             <View style={styles.mapControls}>
-              {mapButtons.map((button: any) => (
+              {/* Main buttons (Add Friend + Ellipsis) */}
+              {mainMapButtons.map((button: any) => (
                 <TouchableOpacity
                   key={button.id}
                   onPress={button.onPress}
                   activeOpacity={0.7}
-                  style={[
-                    styles.mapControlButton,
-                    button.id === '3' && threatAlertMode && styles.alertButtonActive
-                  ]}>
-                  <Image
-                    source={button.image}
-                    resizeMode="contain"
-                    style={[
-                      styles.controlIcon,
-                      button.id === '3' && threatAlertMode && { tintColor: '#000' }
-                    ]}
-                  />
+                  style={styles.mapControlButton}>
+                  {button.isEllipsis ? (
+                    <Ellipsis
+                      size={22}
+                      color={Utills.selectedThemeColors().Base}
+                    />
+                  ) : (
+                    <Image
+                      source={button.image}
+                      resizeMode="contain"
+                      style={styles.controlIcon}
+                    />
+                  )}
                 </TouchableOpacity>
               ))}
+
+              {/* Dropdown buttons */}
+              {showMapButtonsDropdown && (
+                <View style={styles.dropdownContainer}>
+                  {dropdownButtons.map((button: any) => (
+                    <TouchableOpacity
+                      key={button.id}
+                      onPress={button.onPress}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.mapControlButton,
+                        button.id === '4' && threatAlertMode && styles.alertButtonActive
+                      ]}>
+                      <Image
+                        source={button.image}
+                        resizeMode="contain"
+                        style={[
+                          styles.controlIcon,
+                          button.id === '4' && threatAlertMode && { tintColor: '#000' }
+                        ]}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
@@ -2070,6 +2124,19 @@ const styles = StyleSheet.create({
     width: Metrix.HorizontalSize(22),
     height: Metrix.VerticalSize(22),
     tintColor: Utills.selectedThemeColors().Base,
+  },
+  dropdownContainer: {
+    // backgroundColor: Utills.selectedThemeColors().PrimaryTextColor,
+    borderRadius: Metrix.HorizontalSize(8),
+    paddingVertical: Metrix.VerticalSize(5),
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 1,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
   },
   alertButtonActive: {
     backgroundColor: '#FFE6E6',
