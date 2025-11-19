@@ -13,7 +13,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActionSheetIOS,
-    PermissionsAndroid,
+    Linking,
 } from 'react-native';
 import { launchCamera, launchImageLibrary, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 
@@ -34,61 +34,63 @@ interface ChatDetailProps {
             contactName: string;
             contactAvatar: any;
             isActive?: boolean;
+            phone?: string;
+            serviceType?: string;
         };
     };
     navigation: any;
 }
 
-// Mock messages data
-const generateMockMessages = (contactName: string): Message[] => [
+// Generate more relevant emergency-focused messages
+const generateEmergencyMessages = (contactName: string): Message[] => [
     {
         id: '1',
-        text: 'Hey! How are you doing?',
-        timestamp: '6:04 PM',
-        isSent: false,
+        text: 'Hi! I\'ve added you as my emergency contact.',
+        timestamp: '2:30 PM',
+        isSent: true,
         type: 'text',
     },
     {
         id: '2',
-        text: "I'm good! Just working on some projects",
-        timestamp: '6:06 PM',
+        text: 'Thank you for being my trusted contact! I really appreciate it.',
+        timestamp: '2:32 PM',
         isSent: true,
         type: 'text',
     },
     {
         id: '3',
-        text: 'That sounds great! Want to grab coffee this weekend?',
-        timestamp: '6:09 PM',
+        text: 'No problem at all! I\'m here whenever you need help.',
+        timestamp: '2:35 PM',
         isSent: false,
         type: 'text',
     },
     {
         id: '4',
-        text: 'Sure! Saturday afternoon works for me',
-        timestamp: '6:14 PM',
+        text: 'You\'ll get automatic notifications if I trigger an emergency alert.',
+        timestamp: '2:37 PM',
         isSent: true,
         type: 'text',
     },
     {
         id: '5',
-        text: "Perfect! Let's meet at 2pm at our usual spot",
-        timestamp: '6:24 PM',
-        isSent: false,
-        type: 'text',
-    },
-    {
-        id: '6',
-        text: 'See you tomorrow! 👋',
-        timestamp: '6:29 PM',
+        text: 'Got it! Stay safe out there 🙏',
+        timestamp: '2:40 PM',
         isSent: false,
         type: 'text',
     },
 ];
 
 export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => {
-    const { chatId, contactName, contactAvatar, isActive = true } = route.params;
+    const {
+        chatId,
+        contactName,
+        contactAvatar,
+        isActive = true,
+        phone,
+        serviceType
+    } = route.params;
 
-    const [messages, setMessages] = useState<Message[]>(generateMockMessages(contactName));
+    const [messages, setMessages] = useState<Message[]>(generateEmergencyMessages(contactName));
     const [inputText, setInputText] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const flatListRef = useRef<FlatList>(null);
@@ -118,6 +120,32 @@ export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => 
         setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
+
+        // Simulate auto-reply for emergency context
+        setTimeout(() => {
+            const autoReplies = [
+                "I've received your message. Stay safe!",
+                "Thanks for the update. Let me know if you need anything.",
+                "Got it! I'm keeping an eye on my phone.",
+                "Message received. Take care!",
+                "Understood. I'm here if you need me."
+            ];
+
+            const randomReply = autoReplies[Math.floor(Math.random() * autoReplies.length)];
+
+            const autoReplyMessage: Message = {
+                id: (Date.now() + 1).toString(),
+                text: randomReply,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isSent: false,
+                type: 'text',
+            };
+
+            setMessages(prev => [...prev, autoReplyMessage]);
+            setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+        }, 2000);
     }, [inputText]);
 
     const handleAttachmentPress = useCallback(() => {
@@ -209,12 +237,34 @@ export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => 
     }, [isRecording]);
 
     const handleCallPress = useCallback(() => {
-        Alert.alert('Voice Call', `Calling ${contactName}...`);
-    }, [contactName]);
+        if (phone) {
+            Alert.alert(
+                'Call Contact',
+                `Call ${contactName} at ${phone}?`,
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                        text: 'Call',
+                        onPress: () => {
+                            Linking.openURL(`tel:${phone}`);
+                        }
+                    }
+                ]
+            );
+        } else {
+            Alert.alert('No Phone Number', 'Phone number not available for this contact');
+        }
+    }, [contactName, phone]);
 
     const handleVideoCallPress = useCallback(() => {
-        Alert.alert('Video Call', `Starting video call with ${contactName}...`);
-    }, [contactName]);
+        if (serviceType?.toLowerCase() === 'whatsapp') {
+            Alert.alert('WhatsApp Video Call', `Starting WhatsApp video call with ${contactName}...`);
+            // You can implement WhatsApp deep linking here
+            // Linking.openURL(`whatsapp://video/${phone}`);
+        } else {
+            Alert.alert('Video Call', `Starting video call with ${contactName}...`);
+        }
+    }, [contactName, serviceType, phone]);
 
     const renderMessage = useCallback(({ item, index }: { item: Message; index: number }) => {
         const isLastMessage = index === messages.length - 1;
@@ -251,7 +301,7 @@ export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => 
                             </Text>
                         )}
                     </View>
-                    
+
                     <Text style={[
                         styles.timestampText,
                         item.isSent ? styles.sentTimestamp : styles.receivedTimestamp
@@ -276,7 +326,7 @@ export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => 
                     <View style={styles.contactDetails}>
                         <Text style={styles.contactName}>{contactName}</Text>
                         <Text style={styles.activeStatus}>
-                            {isActive ? 'Active now' : 'Last seen recently'}
+                            Active now
                         </Text>
                     </View>
                 </View>
@@ -313,7 +363,7 @@ export const ChatDetail: React.FC<ChatDetailProps> = ({ route, navigation }) => 
                     <View style={styles.inputWrapper}>
                         <TextInput
                             style={styles.textInput}
-                            placeholder="Type a message..."
+                            placeholder="Send an emergency message..."
                             placeholderTextColor="#999"
                             value={inputText}
                             onChangeText={setInputText}
@@ -401,6 +451,19 @@ const styles = StyleSheet.create({
     headerButton: {
         padding: 8,
         marginLeft: 5,
+    },
+    emergencyNotice: {
+        backgroundColor: '#FFF3CD',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    emergencyNoticeText: {
+        fontSize: 14,
+        color: '#856404',
+        textAlign: 'center',
+        fontWeight: '500',
     },
     messagesContainer: {
         flex: 1,

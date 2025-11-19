@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     StyleSheet,
@@ -9,11 +9,17 @@ import {
     Alert,
     Image,
     Text,
+    RefreshControl,
 } from 'react-native';
 import { CustomText } from '../../../components';
 import { Metrix, Utills, Images } from '../../../config';
 import { ChatProps } from '../../propTypes';
 import { Search } from 'lucide-react-native';
+import { HomeAPIS } from '../../../services/home';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/reducers';
+import { useFocusEffect } from '@react-navigation/native';
+import ContactImageDB from '../../../config/utills/ContactImageDB';
 
 interface ChatItemData {
     id: string;
@@ -23,60 +29,114 @@ interface ChatItemData {
     avatar: any;
     unreadCount: number;
     isActive: boolean;
+    phone?: string;
+    serviceType?: string;
 }
-
-// Mock data for chat messages
-const mockChatData: ChatItemData[] = [
-    {
-        id: '1',
-        name: 'Sarah Johnson',
-        message: 'See you tomorrow! 👋',
-        time: '6m',
-        avatar: Images.AddFriend,
-        unreadCount: 2,
-        isActive: true,
-    },
-    {
-        id: '2',
-        name: 'Mike Chen',
-        message: 'Thanks for your help!',
-        time: '2h',
-        avatar: Images.AddFriend,
-        unreadCount: 0,
-        isActive: true,
-    },
-    {
-        id: '3',
-        name: 'Emily Davis',
-        message: 'Sounds good to me!',
-        time: '1d',
-        avatar: Images.AddFriend,
-        unreadCount: 0,
-        isActive: true,
-    },
-    {
-        id: '4',
-        name: 'Alex Thompson',
-        message: 'Check out this article!',
-        time: '2d',
-        avatar: Images.AddFriend,
-        unreadCount: 0,
-        isActive: true,
-    },
-    {
-        id: '5',
-        name: 'Jessica Lee',
-        message: 'Great presentation today!',
-        time: '3d',
-        avatar: Images.AddFriend,
-        unreadCount: 1,
-        isActive: true,
-    },
-];
 
 export const Chat: React.FC<ChatProps> = ({ navigation }) => {
     const [searchText, setSearchText] = useState('');
-    const [chatList, setChatList] = useState(mockChatData);
+    const [chatList, setChatList] = useState<ChatItemData[]>([]);
+    const [originalChatList, setOriginalChatList] = useState<ChatItemData[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const userDetails = useSelector((state: RootState) => state.home.userDetails);
+
+    const wait = (timeout: any) => {
+        return new Promise(resolve => setTimeout(resolve, timeout));
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        wait(1000).then(() => {
+            getTrustedContacts();
+            setRefreshing(false);
+        });
+    };
+
+    const getTrustedContacts = async () => {
+        setLoading(true);
+        try {
+            const res = await HomeAPIS.getTrustedContacts();
+
+            if (res?.data && res.data.length > 0) {
+                // Get all contact IDs
+                const contactIds = res.data.map(item => item.id.toString());
+
+                // Get all images from database in one call
+                const contactImages = await ContactImageDB.getMultipleContactImages(contactIds);
+
+                let array: ChatItemData[] = [];
+
+                // Process each contact
+                res.data.forEach((item: any) => {
+                    const contactId = item.id.toString();
+                    const dbImage = contactImages[contactId];
+
+                    // More robust avatar checking
+                    let finalAvatar = Images.AddFriend; // Default avatar
+
+                    if (dbImage && dbImage !== '') {
+                        finalAvatar = { uri: dbImage };
+                    } else if (item?.avatar && item.avatar !== '' && item.avatar !== null) {
+                        finalAvatar = { uri: item.avatar };
+                    }
+
+                    // Generate a more realistic last message and time
+                    const lastMessages = [
+                        "Available for emergency alerts",
+                        "Ready to help when needed",
+                        "Emergency contact active",
+                        "Standing by for alerts",
+                        "Available for assistance"
+                    ];
+
+                    const timeOptions = ['2m', '5m', '10m', '1h', '2h', '1d', '2d'];
+
+                    const randomMessage = lastMessages[Math.floor(Math.random() * lastMessages.length)];
+                    const randomTime = timeOptions[Math.floor(Math.random() * timeOptions.length)];
+
+                    array.push({
+                        id: item?.id?.toString(),
+                        name: item?.name || 'Unknown Contact',
+                        message: randomMessage,
+                        time: randomTime,
+                        avatar: finalAvatar,
+                        unreadCount: 0, // Trusted contacts don't have unread messages by default
+                        isActive: true, // Assume trusted contacts are active
+                        phone: item?.phone_number,
+                        serviceType: item?.alert_to || 'WhatsApp',
+                    });
+                });
+
+                // Sort by name alphabetically
+                array.sort((a, b) => a.name.localeCompare(b.name));
+
+                setChatList(array);
+                setOriginalChatList(array);
+            } else {
+                setChatList([]);
+                setOriginalChatList([]);
+            }
+
+            setLoading(false);
+        } catch (err) {
+            console.log('Error getting trusted contacts for chat:', err?.response?.data);
+            setLoading(false);
+            // Set empty array on error
+            setChatList([]);
+            setOriginalChatList([]);
+        }
+    };
+
+    // Load contacts when component mounts
+    useFocusEffect(
+        useCallback(() => {
+            getTrustedContacts();
+            return () => {
+                console.log('Chat screen unfocused');
+            };
+        }, []),
+    );
 
     const handleChatPress = useCallback((chatId: string) => {
         const selectedChat = chatList.find(chat => chat.id === chatId);
@@ -86,6 +146,8 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
                 contactName: selectedChat.name,
                 contactAvatar: selectedChat.avatar,
                 isActive: selectedChat.isActive,
+                phone: selectedChat.phone,
+                serviceType: selectedChat.serviceType,
             });
         } else {
             Alert.alert('Chat Selected', `Opening chat with ID: ${chatId}`);
@@ -95,15 +157,15 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
     const handleSearch = useCallback((text: string) => {
         setSearchText(text);
         if (text.trim() === '') {
-            setChatList(mockChatData);
+            setChatList(originalChatList);
         } else {
-            const filtered = mockChatData.filter(chat =>
+            const filtered = originalChatList.filter(chat =>
                 chat.name.toLowerCase().includes(text.toLowerCase()) ||
                 chat.message.toLowerCase().includes(text.toLowerCase())
             );
             setChatList(filtered);
         }
-    }, []);
+    }, [originalChatList]);
 
     const renderChatItem = useCallback(({ item }: { item: ChatItemData }) => (
         <TouchableOpacity
@@ -133,6 +195,25 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
         </TouchableOpacity>
     ), [handleChatPress]);
 
+    const renderEmptyState = () => (
+        <View style={styles.emptyStateContainer}>
+            <Image source={Images.AddFriend} style={styles.emptyStateImage} />
+            <Text style={styles.emptyStateTitle}>No Trusted Contacts</Text>
+            <Text style={styles.emptyStateSubtitle}>
+                Add trusted contacts to start messaging them during emergencies
+            </Text>
+            <TouchableOpacity
+                style={styles.addContactButton}
+                onPress={() => {
+                    // Navigate to add contacts - adjust route name as needed
+                    navigation?.navigate('TrustedContacts');
+                }}
+            >
+                <Text style={styles.addContactButtonText}>Add Contacts</Text>
+            </TouchableOpacity>
+        </View>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -144,7 +225,7 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
                     <Search size={24} color={"#666"} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search messages..."
+                        placeholder="Search contacts..."
                         placeholderTextColor="#999"
                         value={searchText}
                         onChangeText={handleSearch}
@@ -152,14 +233,27 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
                 </View>
             </View>
 
-            <FlatList
-                data={chatList}
-                keyExtractor={(item) => item.id}
-                renderItem={renderChatItem}
-                style={styles.chatList}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.chatListContainer}
-            />
+            {chatList.length === 0 && !loading ? (
+                renderEmptyState()
+            ) : (
+                <FlatList
+                    data={chatList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderChatItem}
+                    style={styles.chatList}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.chatListContainer}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={Utills.selectedThemeColors().PrimaryTextColor}
+                            colors={[Utills.selectedThemeColors().PrimaryTextColor]}
+                            enabled={true}
+                        />
+                    }
+                />
+            )}
         </SafeAreaView>
     );
 };
@@ -262,6 +356,44 @@ const styles = StyleSheet.create({
     unreadText: {
         color: '#FFFFFF',
         fontSize: 12,
+        fontWeight: '600',
+    },
+    emptyStateContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 40,
+        paddingBottom: 100, // Account for tab bar
+    },
+    emptyStateImage: {
+        width: 80,
+        height: 80,
+        marginBottom: 20,
+        opacity: 0.5,
+    },
+    emptyStateTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#000',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    emptyStateSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 30,
+    },
+    addContactButton: {
+        backgroundColor: '#000',
+        paddingHorizontal: 30,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    addContactButtonText: {
+        color: '#fff',
+        fontSize: 16,
         fontWeight: '600',
     },
 });
