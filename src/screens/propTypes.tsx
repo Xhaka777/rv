@@ -128,3 +128,5 @@ export type ThreatReportScreenProps = {
 export type SiriSetupScreenProps = {
   navigation?: any;
 };
+
+export type ChatProps = {};

@@ -1,7 +1,7 @@
 import { Alert, Image, StyleSheet, View, AppState, Linking, TouchableOpacity, Text } from 'react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Settings, TrustedContacts, LiveStream, SafeZone, Premium, HeadsUp, SafeWord, SafeWordTraining, PasscodeSettings, HowToUse, Footages, BodyCam, HeadsUpSettings, SiriSetupScreen } from '../screens';
+import { Settings, TrustedContacts, LiveStream, SafeZone, Premium, HeadsUp, SafeWord, SafeWordTraining, PasscodeSettings, HowToUse, Footages, BodyCam, HeadsUpSettings, SiriSetupScreen, Chat } from '../screens';
 import { Images, Metrix, NavigationService, Utills } from '../config';
 import { MD3LightTheme, PaperProvider } from 'react-native-paper';
 import notifee from '@notifee/react-native';
@@ -53,7 +53,14 @@ const tabsData: TabStackType = [
     mode: 'AUDIO',
   },
   {
-    name: 'LiveStream',
+    name: 'Chat',
+    component: Chat,
+    active: Images.Messaging,
+    inActive: Images.Messaging,
+    mode: 'AUDIO',
+  },
+  {
+    name: 'Stream',
     component: LiveStream,
     active: Images.HomeActive,
     inActive: Images.HomeActive,
@@ -754,6 +761,7 @@ export const TabStack: React.FC = () => {
     switch (iconName) {
       case 'LiveStream': return { width: 30, height: 30 };
       case 'HeadsUp': return { width: 30, height: 30 };
+      case 'Chat': return { width: 25, height: 25 };
       case 'Premium': return { width: 30, height: 30 };
       case 'Settings': return { width: 24, height: 24 };
       default: return { width: 25, height: 25 };

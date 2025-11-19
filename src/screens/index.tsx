@@ -33,6 +33,7 @@ import { BodyCam } from './HomeScreens/BodyCam';
 import { HeadsUpSettings } from './HomeScreens/HeadsUpSetting';
 import ThreatReportScreen from './HomeScreens/ThreatReportScreen';
 import { SiriSetupScreen } from './HomeScreens/SiriSetupScreen';
+import { Chat } from './HomeScreens/Chat';
 
 export {
   // Auth Screens
@@ -69,5 +70,6 @@ export {
   BodyCam,
   HeadsUpSettings,
   ThreatReportScreen,
-  SiriSetupScreen
+  SiriSetupScreen,
+  Chat
 };
