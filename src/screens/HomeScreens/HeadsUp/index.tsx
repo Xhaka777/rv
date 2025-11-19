@@ -45,6 +45,7 @@ import Slider from '@react-native-community/slider';
 import { isThreatWithinRadius } from '../../../utils/distanceHelpers';
 import { debounce } from 'lodash';
 import NetInfo from '@react-native-community/netinfo';
+import FriendsBottomSheet from '../../../components/BottomSheet/FriendsBottomSheet';
 
 const { width, height } = Dimensions.get('window');
 
@@ -148,6 +149,9 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   const headsUpRadius = useSelector((state: RootState) => state.home.headsUpRadius || 3);
   //
   const [threatsWithinRadius, setThreatsWithinRadius] = useState<any[]>([]);
+  //Friends Bottomsheet
+  const [showFriendsSheet, setShowFriendsSheet] = useState(false);
+  const friendsBottomSheetRef = useRef<BottomSheet>(null);
 
   // Get reported threat from navigation params
   const reportedThreat = route?.params?.reportedThreat;
@@ -168,7 +172,11 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       id: 'addFriend',
       image: Images.AddFriend,
       onPress: () => {
-        console.log('object')
+        console.log('Add friend button pressed');
+        setShowFriendsSheet(true);
+        setTimeout(() => {
+          friendsBottomSheetRef.current?.expand();
+        }, 100);
       },
     },
     {
@@ -676,6 +684,11 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     setIsDraggingThreat(false);
     setDraggedThreatLocation(null);
     setCapturedThreatPhoto(null);
+  }, []);
+
+  const closeFriendsSheet = useCallback(() => {
+    friendsBottomSheetRef.current?.close();
+    setShowFriendsSheet(false);
   }, []);
 
   const confirmThreatLocation = useCallback((additionalDetails?: string, image?: string) => {
@@ -2104,6 +2117,18 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
           userCoordinates={userCoordinates}
           // 
           onImageAdded={handleThreatImageAdded}
+        />
+      </View>
+
+      <View style={styles.bottomSheetContainer}>
+        <FriendsBottomSheet
+          ref={friendsBottomSheetRef}
+          onChange={(index) => {
+            if (index === -1) {
+              setShowFriendsSheet(false);
+            }
+          }}
+          onClose={closeFriendsSheet}
         />
       </View>
 
