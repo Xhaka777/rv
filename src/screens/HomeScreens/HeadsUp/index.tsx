@@ -155,6 +155,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
 
   //
   const [showMapButtonsDropdown, setShowMapButtonsDropdown] = useState(false);
+  const [isSpookyActive, setIsSpookyActive] = useState(true);
 
   const [currentLocation, setCurrentLocation] = useState({
     latitude: userCoordinates?.latitude || 37.78825,
@@ -251,6 +252,17 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       image: Images.MainLocation,
       onPress: () => {
         getCurrentLocation();
+      },
+    },
+  ];
+
+  const spookyButton = [
+    {
+      id: '1',
+      image: isSpookyActive ? Images.Spooky : Images.Signal,
+      onPress: () => {
+        setIsSpookyActive(!isSpookyActive); // Toggle between true/false
+        console.log('Spooky button pressed, now showing:', !isSpookyActive ? 'Spooky' : 'Signal');
       },
     },
   ];
@@ -1803,6 +1815,26 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
           </View>
         )}
 
+        {!isThreatDetailsOpen && (
+          <View style={styles.spookyButtonContainer}>
+            {spookyButton?.map((item: any) => {
+              return (
+                <TouchableOpacity
+                  key={item?.id}
+                  onPress={item?.onPress}
+                  activeOpacity={0.7}
+                  style={styles.spookyButton}>
+                  <Image
+                    source={item.image}
+                    resizeMode="contain"
+                    style={styles.spookyButtonIcon}
+                  />
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        )}
+
       </View>
 
       {/* Popups */}
@@ -2184,6 +2216,32 @@ const styles = StyleSheet.create({
   locationButtonIcon: {
     width: Metrix.HorizontalSize(55),
     height: Metrix.VerticalSize(55)
+  },
+  spookyButtonContainer: {
+    position: 'absolute',
+    zIndex: 100,
+    bottom: '11.5%',
+    left: '5%', // This positions it on the left side
+  },
+  spookyButton: {
+    width: Metrix.HorizontalSize(47),
+    height: Metrix.VerticalSize(47),
+    backgroundColor: Utills.selectedThemeColors().PrimaryTextColor,
+    borderRadius: Metrix.HorizontalSize(22.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  spookyButtonIcon: {
+    width: Metrix.HorizontalSize(30),
+    height: Metrix.VerticalSize(30)
   },
   // Search bar styles
   searchContainer: {
