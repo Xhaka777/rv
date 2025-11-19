@@ -197,7 +197,14 @@ const Images = {
 
   Apple: require('../../assets/icons/apple.png'),
   RoveWave: require('../../assets/icons/rove_wave.png'),
-  Exit: require('../../assets/icons/exit.png')
+  Exit: require('../../assets/icons/exit.png'),
+
+  //Chat
+  Messaging: require('../../assets/icons/messaging.png'),
+  AddFriend: require('../../assets/icons/add_friend.png'),
+  Lifeline: require('../../assets/icons/Lifeline.png'),
+  Signal: require('../../assets/icons/signal.png'),
+  Spooky: require('../../assets/icons/spooky.png'),
 };
 
 export default Images;
