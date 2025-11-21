@@ -7,7 +7,7 @@ import { icons } from 'lucide-react-native';
 interface FirstBottomSheetProps {
     onYes: () => void;
     onNo: () => void;
-    onThreatSelect: (threatData: { id: number, icon: any, label: string, message: string }) => void; 
+    onThreatSelect: (threatData: { id: number, icon: any, label: string, message: string }) => void;
     onChange: (index: number) => void;
 }
 
@@ -16,54 +16,54 @@ const FirstBottomSheet = forwardRef<BottomSheet, FirstBottomSheetProps>(
         const snapPoints = useMemo(() => ['10%', '40%'], []); // First point shows only header, second shows full content
 
         const iconActions = [
-            { 
-                id: 1, 
-                icon: Images.Harasment, 
+            {
+                id: 1,
+                icon: Images.Harasment,
                 label: 'Harassment',
-                message: 'Post here when someone is aggressively confronting you or intimidating you. Updates are anonymous and reviewed.' 
+                message: 'Post here when someone is aggressively confronting you or intimidating you. Updates are anonymous and reviewed.'
             },
-            { 
-                id: 2, 
-                icon: Images.SexualHarsment, 
+            {
+                id: 2,
+                icon: Images.SexualHarsment,
                 label: 'Sexuals Harassment',
                 message: 'Post here when someone makes unwanted sexual contact, advances, or comments. Media is optional — only upload if it’s safe and appropriate. Updates are anonymous and reviewed.'
             },
-            { 
-                id: 3, 
-                icon: Images.Followed, 
+            {
+                id: 3,
+                icon: Images.Followed,
                 label: 'Followed',
                 message: 'Post here if you were followed. Updates are anonymous and reviewed.'
-             },
-            { 
-                id: 4, 
+            },
+            {
+                id: 4,
                 icon: Images.Fight,
                 label: 'Fight',
                 message: 'Post here when you see a physical fight or violent confrontation. Updates are anonymous and reviewed.'
             },
-            { 
-                id: 5, 
-                icon: Images.Stabing, 
+            {
+                id: 5,
+                icon: Images.Stabing,
                 label: 'Stabbing',
                 message: 'Post here when you see someone threatened or attacked with a knife or similar weapon. Updates are anonymous and reviewed.'
-             },
-            { 
-                id: 6, 
+            },
+            {
+                id: 6,
                 icon: Images.Shooter,
                 label: 'Shooting',
                 message: 'Post here when you hear gunshots or see a firearm being used or brandished. Updates are anonymous and reviewed.'
-             },
-            { 
-                id: 7, 
+            },
+            {
+                id: 7,
                 icon: Images.Danger,
                 label: 'Major event',
                 message: 'Post here when you witness a mass-casualty incident such as a shooting, explosion, or terror attack. Updates are anonymous but misuse may lead to restrictions.',
-             },
-            { 
-                id: 8, 
+            },
+            {
+                id: 8,
                 icon: Images.Siren,
                 label: 'Active Ops',
                 message: 'Post here when you see an on-the-ground operation and the area looks unsafe for bystanders. Updates are anonymous and reviewed.'
-             },
+            },
         ];
 
         // Handle icon selection

@@ -389,6 +389,16 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
     navigation.goBack();
   }, [isListening, navigation]);
 
+  const isSendButtonEnabled = useCallback(() => {
+    const hasImage = !!selectedImage;
+    const hasText = inputText.trim().length > 0;
+    const charCount = hasText ? countCharacters(inputText.trim()) : 0;
+    const meetsTextRequirement = hasText && charCount >= 40;
+
+    // Enable if: text >= 40 chars OR image exists
+    return meetsTextRequirement || hasImage;
+  }, [inputText, selectedImage]);
+
   const handleSubmit = useCallback(() => {
     if (isProcessing || showSuccessLoader) return;
 
@@ -492,6 +502,8 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
     }
 
     if (!inputText.trim() && !selectedImage) return;
+
+    if (!isSendButtonEnabled()) return;
 
     let textToSend = inputText.trim();
     if (textToSend.length > 0) {
@@ -634,13 +646,9 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
         </Text>
 
         <TouchableOpacity
-          style={[
-            styles.closeButton,
-            (isProcessing || showSuccessLoader) && styles.closeButtonDisabled
-          ]}
-          onPress={handleSubmit}
+          style={styles.closeButton}
+          onPress={handleClose}
           activeOpacity={0.7}
-          disabled={isProcessing || showSuccessLoader}
         >
           {isProcessing ? (
             <ActivityIndicator size="small" color="#fff" />
@@ -770,16 +778,15 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                ((isTypingManually && countCharacters(inputText.trim()) >= 40) ||
-                  (!isTypingManually && inputText.trim().length > 0) ||
-                  (selectedImage && inputText.trim().length === 0)) && styles.sendButtonActive
+                isSendButtonEnabled() && styles.sendButtonActive
               ]}
-              onPress={sendMessage}
+              onPress={isSendButtonEnabled() ? handleSubmit : null}
+              disabled={!isSendButtonEnabled()}
             >
               <Image
-                source={Images.SendMessage}
+                source={Images.Send_Zap}
                 resizeMode="contain"
-                style={{ width: 40, height: 40 }}
+                style={{ width: 20, height: 20, tintColor: '#fff' }}
               />
             </TouchableOpacity>
           </View>
@@ -840,7 +847,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   successCheckmark: {
-    backgroundColor: '#4ade80',
+    backgroundColor: '#18af65',
     borderRadius: 20,
     width: 24,
     height: 24,
@@ -1103,9 +1110,10 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     height: 40,
     width: 40,
+    backgroundColor: '#E0E0E0',
   },
   sendButtonActive: {
-    backgroundColor: '#4ade80',
+    backgroundColor: '#18af65',
   },
 });
 

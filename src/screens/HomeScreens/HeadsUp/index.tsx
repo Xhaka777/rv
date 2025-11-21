@@ -616,6 +616,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     NavigationService.navigate(RouteNames.HomeRoutes.ThreatReportScreen, {
       onComplete: confirmThreatLocation,
       selectedThreat: tempThreatData,
+      // onThreatConfirmed: onThreatConfirmed,
       shouldAutoFocus: true,
       capturedPhoto: photoUri,
     });
@@ -631,6 +632,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     NavigationService.navigate(RouteNames.HomeRoutes.ThreatReportScreen, {
       onComplete: confirmThreatLocation,
       selectedThreat: tempThreatData,
+      // onThreatConfirmed: onThreatConfirmed,
       shouldAutoFocus: true,
       capturedPhoto: null,
     });

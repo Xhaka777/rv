@@ -32,7 +32,7 @@ import SiriOrb from './SiriObt';
 import VolumeAnimatedIcon from './VolumeAnimatedIcon';
 import VolumeSimulator from './VolumeSimulator';
 import WaveformVisualizer from './WaveformVisualizer';
-import CameraScreen from './CameraScreen';
+// import CameraScreen from '../screens/HomeScreens/CameraScreen';
 import SiriDebugComponent from './SiriDebug';
 
 export {
@@ -70,5 +70,5 @@ export {
   VolumeAnimatedIcon,
   VolumeSimulator,
   WaveformVisualizer,
-  CameraScreen
+  // CameraScreen
 };

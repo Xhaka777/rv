@@ -207,6 +207,7 @@ const Images = {
   Lifeline: require('../../assets/icons/Lifeline.png'),
   Signal: require('../../assets/icons/signal.png'),
   Spooky: require('../../assets/icons/spooky.png'),
+  Send_Zap: require('../../assets/icons/send_zap.png'),
 };
 
 export default Images;
