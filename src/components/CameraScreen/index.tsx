@@ -135,7 +135,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ onPhotoApproved, onClose, o
     try {
       setIsCapturing(true);
       console.log('🔄 Starting photo capture...');
-      
+
       if (!camera.current) {
         throw new Error('Camera reference is not available');
       }
@@ -161,10 +161,10 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ onPhotoApproved, onClose, o
 
     } catch (error) {
       console.error('❌ Error in handleCapturePress:', error);
-      
+
       // More specific error messages
       let errorMessage = 'Something went wrong while taking the photo';
-      
+
       if (error.message) {
         if (error.message.includes('Camera is not ready')) {
           errorMessage = 'Camera is not ready. Please wait a moment and try again.';
@@ -174,7 +174,7 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ onPhotoApproved, onClose, o
           errorMessage = 'Camera device is not available. Please check your camera.';
         }
       }
-      
+
       Alert.alert('Capture failed', errorMessage);
     } finally {
       setIsCapturing(false);
@@ -281,10 +281,10 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ onPhotoApproved, onClose, o
             photo={true}
             video={false} // FIXED: Set to false since we're only taking photos
             audio={false} // FIXED: Set to false since we don't need audio for photos
-            zoom={zoom === 0 ? 0.5 : 1}
+            zoom={zoom === 0 ? (device?.minZoom || 1) : (device?.neutralZoom || 1)}
             torch={flash === 'on' ? 'on' : 'off'}
           />
-          
+
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.flashButton}
