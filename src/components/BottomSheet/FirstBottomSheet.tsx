@@ -2,6 +2,7 @@ import React, { forwardRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { Images } from '../../config';
+import { icons } from 'lucide-react-native';
 
 interface FirstBottomSheetProps {
     onYes: () => void;
@@ -16,11 +17,13 @@ const FirstBottomSheet = forwardRef<BottomSheet, FirstBottomSheetProps>(
 
         const iconActions = [
             { id: 1, icon: Images.Harasment, label: 'Harassment' },
-            { id: 2, icon: Images.Followed, label: 'Followed' },
-            { id: 3, icon: Images.Fight, label: 'Fight' },
-            { id: 4, icon: Images.Stabing, label: 'Stabbing' },
-            { id: 5, icon: Images.Shooter, label: 'Shooting' },
-            { id: 6, icon: Images.Danger, label: 'Mass event' },
+            { id: 2, icon: Images.SexualHarsment, label: 'Sexuals Harassment'},
+            { id: 3, icon: Images.Followed, label: 'Followed' },
+            { id: 4, icon: Images.Fight, label: 'Fight' },
+            { id: 5, icon: Images.Stabing, label: 'Stabbing' },
+            { id: 6, icon: Images.Shooter, label: 'Shooting' },
+            { id: 7, icon: Images.Danger, label: 'Major event' },
+            { id: 8, icon: Images.Siren, label: 'Active Ops' },
         ];
 
         // Handle icon selection
@@ -109,9 +112,8 @@ const styles = StyleSheet.create({
     iconGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        gap: 15,
-        padding: 20,
+        justifyContent: 'space-around',
+        padding: 2,
         backgroundColor: 'rgba(223, 223, 223, 0.07)',
     },
     handleIndicator: {
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     iconButton: {
-        width: '30%',
+        width: '23%',
         alignItems: 'center',
         marginBottom: 24,
     },

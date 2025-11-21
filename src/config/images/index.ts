@@ -194,6 +194,8 @@ const Images = {
   LocalDownload: require('../../assets/icons/local_download.png'),
   Clock: require('../../assets/icons/clock.png'),
   Ear: require('../../assets/icons/new_ear.png'),
+  SexualHarsment: require('../../assets/icons/sexual_harassment.png'),
+  Siren: require('../../assets/icons/siren.png'),
 
   Apple: require('../../assets/icons/apple.png'),
   RoveWave: require('../../assets/icons/rove_wave.png'),
