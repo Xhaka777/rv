@@ -76,10 +76,6 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   const siriArmTrigger = useSelector((state: RootState) => state.home.siriArmTrigger);
   const shouldArmOnLivestream = useSelector((state: RootState) => state.home.shouldArmOnLivestream);
 
-  // NEW: Tutorial state selectors
-  const tutorialCompleted = useSelector((state: RootState) => state.home.tutorialCompleted);
-  const isFirstTime = useSelector((state: RootState) => state.user.isFirstTime);
-
   // NEW: Add state for trusted contacts
   const [trustedContacts, setTrustedContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(true);
@@ -98,15 +94,12 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
     secondary?: string;
   }>({});
 
-
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const animationRef = useRef(null);
   const lastModeSwitch = useRef<number>(0);
   const secondCameraInitialized = useRef<boolean>(false);
   const hasInitializedOnce = useRef(false);
   const rtcInitRef = useRef(false);
-
-
 
   const isFocus = useIsFocused();
   const layout = useWindowDimensions();
@@ -203,6 +196,9 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
   // Animation values for horizontal swiping
   const translateX = useSharedValue(0);
   const modeIndex = useSharedValue(0); // 0 for AUDIO, 1 for VIDEO
+
+  //
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   //
   const responderUidMapRef = useRef({});
@@ -303,7 +299,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       stiffness: 200,
     });
 
-    // 🎥 NEW: only mute/unmute video instead of tearing cameras down
+    //  NEW: only mute/unmute video instead of tearing cameras down
     if (engine) {
       if (newMode === 'AUDIO') {
         console.log('🎛 [switchMode] Muting local video for AUDIO mode');
@@ -316,7 +312,7 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       }
     }
 
-    // ✅ Keep your UI/UX logic
+    //  Keep your UI/UX logic
     if (newMode === 'AUDIO') {
       setEyeEarState('EAR');
       showToastNotification('Recipients will get: Audio Stream');
@@ -412,17 +408,31 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       });
     });
 
-  const showToastNotification = (message: string | { firstLine: string; secondLine: string }) => {
-    setToastMessage(message);
-    setShowToast(true);
+  const showToastNotification = (message: string | { firstLine: string; secondLine: string; isComplex?: boolean; lines?: any[] }) => {
 
-    const hideDelay = typeof message === 'object' && message.isComplex ? 4000 : 3000;
+    // 1️⃣ Clear any active timeout immediately so fast presses do NOT overlap timers
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
 
-    // Auto-hide after 3 seconds
+    // 2️⃣ Reset state before setting new message to avoid rendering glitch
+    setShowToast(false);
+
+    // Small delay ensures React resets internal render cycle cleanly before showing again
     setTimeout(() => {
-      setShowToast(false);
-      setToastMessage('');
-    }, hideDelay);
+      setToastMessage(message);
+      setShowToast(true);
+
+      const hideDelay =
+        typeof message === "object" && message.isComplex ? 4000 : 2500;
+
+      // 3️⃣ Set ONE timeout only (never stacking)
+      toastTimeoutRef.current = setTimeout(() => {
+        setShowToast(false);
+        toastTimeoutRef.current = null;
+      }, hideDelay);
+    }, 50);
   };
 
   // Add this after your existing useEffects in LiveStream component
