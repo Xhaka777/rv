@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform, Keyboard, Alert, ActivityIndicator, ImageBackground, Image, AppState } from 'react-native';
-import { Camera, Mic, X } from 'lucide-react-native';
+import { Camera, ChevronLeft, Mic, X } from 'lucide-react-native';
 import ImagePicker from 'react-native-image-crop-picker';
 import Voice from '@react-native-voice/voice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -621,7 +621,18 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
     >
       {/* Fixed Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Text style={styles.headerTitle}>Short description</Text>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleClose}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={32} color="#fff" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>
+          {selectedThreat?.label || 'Threat Report'}
+        </Text>
+
         <TouchableOpacity
           style={[
             styles.closeButton,
@@ -793,6 +804,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#333',
     position: 'relative',
     backgroundColor: 'rgba(51, 51, 51, 0.82)',
+    // height: 60, // Add this line
   },
   headerTitle: {
     fontSize: 24,
@@ -800,6 +812,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'Inter-SemiBold',
     textAlign: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    left: 20,
+    top: '50%', // Add this line
+    marginTop: 40, // Add this line (half of button height)
   },
   closeButton: {
     width: 40,
@@ -810,6 +833,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'absolute',
     right: 20,
+    top: '50%', // Add this line
+    marginTop: 40, // Add this line (half of button height)
   },
   closeButtonDisabled: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -933,7 +958,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f2eb',
     borderRadius: 12,
     padding: 16,
-    marginVertical: 12,
+    marginVertical: 2,
     maxWidth: '85%',
   },
   infoMessageText: {
