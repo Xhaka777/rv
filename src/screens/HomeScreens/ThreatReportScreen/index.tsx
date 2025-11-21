@@ -461,7 +461,7 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
     try {
       const image = await ImagePicker?.openPicker({
         mediaType: 'photo',
-        cropping: true,
+        cropping: false,
       });
       if (_.isEmpty(image?.path)) {
         Alert.alert('Error', 'Upload image field required.');
