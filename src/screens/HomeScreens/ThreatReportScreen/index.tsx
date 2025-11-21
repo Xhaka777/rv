@@ -17,7 +17,7 @@ import { RouteProp } from '@react-navigation/native';
 type HomeParamList = {
   ThreatReportScreen: {
     onComplete: (additionalDetails: string, image?: string) => void;
-    selectedThreat?: { id: number, icon: any, label: string } | null;
+    selectedThreat?: { id: number, icon: any, label: string, message: string } | null;
     shouldAutoFocus?: boolean;
     capturedPhoto?: string | null;
   };
@@ -142,9 +142,16 @@ const ThreatReportScreen: React.FC<ThreatReportScreenProps> = ({ route, navigati
     console.log('🔄 ThreatReportScreen: Initializing messages');
     setMessages([]);
 
+    const getInitialMessage = () => {
+      if (selectedThreat?.message) {
+        return selectedThreat.message;
+      }
+      return 'Your community update is anonymous. Only moderators can view it.';
+    }
+
     const initialMessage: Message = {
       id: '1',
-      text: 'Your community update is anonymous. Only moderators can view it.',
+      text: getInitialMessage(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isBot: true,
       type: 'info'

@@ -83,7 +83,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   // HeadsUp states
   const dramaModalShown = useSelector((state: RootState) => state.home.dramaModalShown);
   const [showDramaModal, setShowDramaModal] = useState(!dramaModalShown);
-  const [tempThreatData, setTempThreatData] = useState<{ id: number, icon: any, label: string } | null>(null);
+  const [tempThreatData, setTempThreatData] = useState<{ id: number, icon: any, label: string, message: string } | null>(null);
   const [activeSheet, setActiveSheet] = useState<'none' | 'first' | 'second' | 'camera' | 'third'>('none');
   const [showReportingMarker, setShowReportingMarker] = useState(false);
   const [captureThreatPhoto, setCapturedThreatPhoto] = useState<string | null>(null);
@@ -569,7 +569,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     }, 300);
   }, [dispatch]);
 
-  const handleTempThreatSelection = useCallback((threatData: { id: number, icon: any, label: string }) => {
+  const handleTempThreatSelection = useCallback((threatData: { id: number, icon: any, label: string, message: string }) => {
     setTempThreatData(threatData);
     console.log('🎯 INITIAL THREAT SETUP - Setting to current location:', currentLocation);
 
@@ -616,7 +616,6 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     NavigationService.navigate(RouteNames.HomeRoutes.ThreatReportScreen, {
       onComplete: confirmThreatLocation,
       selectedThreat: tempThreatData,
-      // onThreatConfirmed: onThreatConfirmed,
       shouldAutoFocus: true,
       capturedPhoto: photoUri,
     });
@@ -632,7 +631,6 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     NavigationService.navigate(RouteNames.HomeRoutes.ThreatReportScreen, {
       onComplete: confirmThreatLocation,
       selectedThreat: tempThreatData,
-      // onThreatConfirmed: onThreatConfirmed,
       shouldAutoFocus: true,
       capturedPhoto: null,
     });
