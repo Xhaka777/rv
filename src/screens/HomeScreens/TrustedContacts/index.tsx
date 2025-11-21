@@ -241,7 +241,11 @@ export const TrustedContacts: React.FC<TrustedContactsProps> = ({ }) => {
   };
 
   return (
-    <MainContainer>
+    <MainContainer
+      customeStyle={{
+        paddingVertical: 0,
+        flex: 1,
+      }}>
       {/* Premium icon back with title */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -310,10 +314,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Metrix.VerticalSize(15),
-    // paddingHorizontal: Metrix.HorizontalSize(20),
+    paddingVertical: Metrix.VerticalSize(5),
     borderBottomWidth: 1,
     borderBottomColor: Utills.selectedThemeColors().TextInputBorderColor,
+    marginBottom: Metrix.VerticalSize(20), // Add this line
   },
   headerContent: {
     flex: 1,
@@ -321,10 +325,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headsUpIcon: {
-    width: Metrix.HorizontalSize(32),
-    height: Metrix.VerticalSize(32),
+    width: Metrix.HorizontalSize(28), // Changed from 32 to 28
+    height: Metrix.VerticalSize(28), // Changed from 32 to 28
     tintColor: Utills.selectedThemeColors().PrimaryTextColor,
-    marginRight: Metrix.HorizontalSize(10),
+    marginRight: Metrix.HorizontalSize(5), // Changed from 10 to 5
   },
   headerTitle: {
     fontSize: Metrix.customFontSize(18),

@@ -370,19 +370,6 @@ export const Footages: React.FC<FootagesProps> = ({ }) => {
 
   const keyExtractor = useCallback((item: any) => item?.id?.toString(), []);
 
-  const ListHeaderComponent = useMemo(() => (
-    <View style={styles.titleContainer}>
-      <Image
-        source={Images.Premium}
-        style={styles.premiumIcon}
-        resizeMode="contain"
-      />
-      <CustomText.RegularText customStyle={styles.textHeading}>
-        Shared streams
-      </CustomText.RegularText>
-    </View>
-  ), []);
-
   const renderFooter = useMemo(() => {
     if (!loadingMore) return null;
     return (
@@ -399,52 +386,55 @@ export const Footages: React.FC<FootagesProps> = ({ }) => {
         backgroundColor={Utills.selectedThemeColors().Base}
       />
 
-      <LegendList
-        data={data}
-        renderItem={renderIncidentItem}
-        keyExtractor={keyExtractor}
+      <MainContainer customeStyle={styles.mainContainer}>
+        {/* Add standardized header */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerIcon}>
+            <Image
+              source={Images.Premium}
+              style={styles.settingsIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <CustomText.LargeBoldText customStyle={styles.headerTitle}>
+            Shared streams
+          </CustomText.LargeBoldText>
+        </View>
 
-        // Enable recycling for maximum performance
-        recycleItems={true}
+        <LegendList
+          data={data}
+          renderItem={renderIncidentItem}
+          keyExtractor={keyExtractor}
+          recycleItems={true}
+          ListFooterComponent={renderFooter}
+          contentContainerStyle={styles.flatlist}
+          showsVerticalScrollIndicator={true}
+          onEndReached={loadMoreIncidents}
+          onEndReachedThreshold={0.1}
+          getItemLayout={(data, index) => ({
+            length: 350,
+            offset: 350 * index,
+            index,
+          })}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Utills.selectedThemeColors().PrimaryTextColor}
+              colors={[Utills.selectedThemeColors().PrimaryTextColor]}
+              enabled={true}
+            />
+          }
+        />
 
-        // Header and Footer components
-        ListHeaderComponent={ListHeaderComponent}
-        ListFooterComponent={renderFooter}
+        <Loader isLoading={loading || isDownloading} />
 
-        // Styling
-        contentContainerStyle={styles.flatlist}
-        showsVerticalScrollIndicator={true}
-
-        // Pagination
-        onEndReached={loadMoreIncidents}
-        onEndReachedThreshold={0.1}
-
-        // Pagination
-        onEndReached={loadMoreIncidents}
-        onEndReachedThreshold={0.1}
-        getItemLayout={(data, index) => ({
-          length: 350,
-          offset: 350 * index,
-          index,
-        })}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Utills.selectedThemeColors().PrimaryTextColor}
-            colors={[Utills.selectedThemeColors().PrimaryTextColor]}
-            enabled={true}
-          />
-        }
-      />
-
-      <Loader isLoading={loading || isDownloading} />
-
-      <DownloadBottomSheet
-        ref={bottomSheetRef}
-        onSharePress={handleSharePress}
-        onSaveLocallyPress={handleSaveLocallyPress}
-      />
+        <DownloadBottomSheet
+          ref={bottomSheetRef}
+          onSharePress={handleSharePress}
+          onSaveLocallyPress={handleSaveLocallyPress}
+        />
+      </MainContainer>
     </SafeAreaView>
   );
 
@@ -480,5 +470,28 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
-  }
+  },
+  mainContainer: {
+    backgroundColor: Utills.selectedThemeColors().Base,
+    paddingVertical: 0,
+    flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Metrix.VerticalSize(20),
+    paddingTop: Metrix.VerticalSize(10),
+  },
+  headerIcon: {
+    marginRight: Metrix.HorizontalSize(5),
+  },
+  settingsIcon: {
+    width: Metrix.HorizontalSize(28),
+    height: Metrix.VerticalSize(28),
+    tintColor: Utills.selectedThemeColors().PrimaryTextColor,
+  },
+  headerTitle: {
+    fontSize: Metrix.customFontSize(18),
+    fontWeight: '600',
+  },
 });
