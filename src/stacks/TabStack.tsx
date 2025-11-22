@@ -326,13 +326,20 @@ export const TabStack: React.FC = () => {
     };
   }, []);
 
-  // Helper function to stop all audio services
   const stopAllAudioServices = useCallback(async () => {
     try {
-      await audioSessionService.stopAudioStreaming();
-      await audioSessionService.stopRecording();
-      await audioSessionService.stopSpeechRecognition();
+      console.log('🛑 Stopping all audio services...');
+      
+      // Stop in parallel but don't throw on individual failures
+      await Promise.allSettled([
+        audioSessionService.stopAudioStreaming(),
+        audioSessionService.stopRecording(),
+        audioSessionService.stopSpeechRecognition()
+      ]);
+      
+      console.log('✅ All audio services stop attempted');
     } catch (error) {
+      console.log('⚠️ Error in stopAllAudioServices (non-critical):', error);
     }
   }, []);
 

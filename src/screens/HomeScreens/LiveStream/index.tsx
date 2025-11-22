@@ -231,6 +231,11 @@ export const LiveStream: React.FC<LiveStreamProps> = ({ }) => {
       setTrustedContacts(response.data || []);
     } catch (error) {
       console.error('Error fetching trusted contacts:', error);
+      if (error instanceof Error) {
+        console.error('Error fetching trusted contacts:', error.message);
+      } else {
+        console.error('Error fetching trusted contacts:', String(error));
+      }
       setTrustedContacts([]);
     } finally {
       setContactsLoading(false);
