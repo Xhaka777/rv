@@ -64,38 +64,33 @@ export const BodyCam: React.FC<BodyCamProps> = ({ navigation }) => {
     };
 
     return (
-        <View style={styles.mainContainer}>
+        <MainContainer
+            customeStyle={{
+                paddingVertical: 0,
+                flex: 1,
+            }}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}>
 
+                {/* Standardized Header */}
                 <View style={styles.headerContainer}>
-                    <View style={styles.headerLeft}>
-                        <View style={styles.headerIcon}>
-                            <RoundImageContainer
-                                source={Images.Premium}
-                                circleWidth={28}
-                                backgroundColor="transparent"
-                                imageStyle={{
-                                    tintColor: Utills.selectedThemeColors().PrimaryTextColor,
-                                }}
-                            />
-                        </View>
+                    <View style={styles.headerContent}>
+                        <Image
+                            source={Images.Premium}
+                            style={styles.headsUpIcon}
+                            resizeMode="contain"
+                        />
                         <CustomText.LargeBoldText customStyle={styles.headerTitle}>
                             Bodycam Mode
                         </CustomText.LargeBoldText>
                     </View>
-
-                    {/* Exit Button */}
-                    <TouchableOpacity
-                        style={styles.exitButton}
-                        onPress={() => navigation.goBack()}
-                        activeOpacity={0.7}
-                    >
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.exitButton}>
                         <Image
                             source={Images.Exit}
-                            style={{ width: 20, height: 20 }}
-                            resizeMode='contain' />
+                            style={{ width: 20, height: 20, tintColor: '#ffffff' }}
+                            resizeMode="contain"
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -260,16 +255,15 @@ export const BodyCam: React.FC<BodyCamProps> = ({ navigation }) => {
                     </View>
                 </View>
             </ScrollView>
-        </View>
+        </MainContainer>
     );
 };
 
 const styles = StyleSheet.create({
     mainContainer: {
         backgroundColor: Utills.selectedThemeColors().Base,
+        paddingVertical: 0, // Changed from 20 to 0
         flex: 1,
-        paddingVertical: Metrix.VerticalSize(20),
-        paddingHorizontal: Metrix.HorizontalSize(15),
     },
     scrollContent: {
         paddingBottom: Metrix.VerticalSize(30),
@@ -278,33 +272,30 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingVertical: Metrix.VerticalSize(8),
+        borderBottomWidth: 1,
+        borderBottomColor: Utills.selectedThemeColors().TextInputBorderColor,
         marginBottom: Metrix.VerticalSize(20),
-        paddingTop: Metrix.VerticalSize(10),
-        marginTop: 10,
     },
-    headerLeft: {
+    headerContent: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1,
     },
-    exitButton: {
-        width: Metrix.HorizontalSize(40),
-        height: Metrix.VerticalSize(40),
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: Metrix.HorizontalSize(20),
-    },
-    exitButtonText: {
-        color: Utills.selectedThemeColors().PrimaryTextColor,
-        fontSize: Metrix.customFontSize(18),
-        fontWeight: '600',
-    },
-    headerIcon: {
+    headsUpIcon: {
+        width: Metrix.HorizontalSize(28),
+        height: Metrix.VerticalSize(28),
+        tintColor: Utills.selectedThemeColors().PrimaryTextColor,
         marginRight: Metrix.HorizontalSize(5),
     },
     headerTitle: {
         fontSize: Metrix.customFontSize(18),
         fontWeight: '600',
+        color: Utills.selectedThemeColors().PrimaryTextColor,
+    },
+    exitButton: {
+        padding: Metrix.HorizontalSize(8),
+        marginLeft: Metrix.HorizontalSize(10),
     },
     section: {
         marginBottom: Metrix.VerticalSize(20),
