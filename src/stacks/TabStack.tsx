@@ -816,7 +816,7 @@ export const TabStack: React.FC = () => {
         }}
       >
         <Tab.Navigator
-          initialRouteName='LiveStream'
+          initialRouteName='Stream'
           screenOptions={{
             headerShown: false,
             tabBarStyle: {
