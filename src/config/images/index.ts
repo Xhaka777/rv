@@ -202,7 +202,7 @@ const Images = {
   Exit: require('../../assets/icons/exit.png'),
 
   //Chat
-  Messaging: require('../../assets/icons/messaging.png'),
+  Messaging: require('../../assets/icons/chat.png'),
   AddFriend: require('../../assets/icons/add_friend.png'),
   Lifeline: require('../../assets/icons/Lifeline.png'),
   Signal: require('../../assets/icons/signal.png'),

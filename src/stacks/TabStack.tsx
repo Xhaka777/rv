@@ -120,7 +120,8 @@ export const TabStack: React.FC = () => {
   const navigationState = useNavigationState(state => state);
   const tabState = navigationState?.routes?.[navigationState.index]?.state;
 
-  const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'LiveStream';
+  // const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'LiveStream';
+  const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'Stream';
 
   const threatAlertMode = useSelector((state: RootState) => state.home.threatAlertMode);
   const headsUpRadius = useSelector((state: RootState) => state.home.headsUpRadius || 3);

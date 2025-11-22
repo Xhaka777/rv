@@ -33,12 +33,26 @@ interface ChatItemData {
     serviceType?: string;
 }
 
+interface RequestItemData {
+    id: string;
+    name: string;
+    message: string;
+    time: string;
+    avatar: any;
+    username?: string;
+    mutualFriends?: number;
+    isNewRequest?: boolean;
+}
+
 export const Chat: React.FC<ChatProps> = ({ navigation }) => {
     const [searchText, setSearchText] = useState('');
     const [chatList, setChatList] = useState<ChatItemData[]>([]);
     const [originalChatList, setOriginalChatList] = useState<ChatItemData[]>([]);
+    const [requestsList, setRequestsList] = useState<RequestItemData[]>([]);
+    const [originalRequestsList, setOriginalRequestsList] = useState<RequestItemData[]>([]);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [activeTab, setActiveTab] = useState<'chats' | 'requests'>('chats');
     const userDetails = useSelector((state: RootState) => state.home.userDetails);
 
     const wait = (timeout: any) => {
@@ -48,7 +62,11 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
     const onRefresh = () => {
         setRefreshing(true);
         wait(1000).then(() => {
-            getTrustedContacts();
+            if (activeTab === 'chats') {
+                getTrustedContacts();
+            } else {
+                getFriendRequests();
+            }
             setRefreshing(false);
         });
     };
@@ -128,14 +146,59 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
         }
     };
 
-    // Load contacts when component mounts
+    // Mock function to get friend requests - replace with actual API call
+    const getFriendRequests = async () => {
+        setLoading(true);
+        try {
+            // TODO: Replace with actual API call
+            // const res = await HomeAPIS.getFriendRequests();
+            
+            // Mock data for demonstration
+            const mockRequests: RequestItemData[] = [
+                {
+                    id: '1',
+                    name: 'Ardit Xhaka',
+                    message: 'Hey, I found you in canal are you safe.',
+                    time: '2h',
+                    avatar: Images.AddFriend,
+                    mutualFriends: 0,
+                    isNewRequest: true,
+                },
+                {
+                    id: '2',
+                    name: '@altin_xhaka',
+                    message: 'Hi, I\'m Christian. Let\'s connect.',
+                    time: '1h',
+                    avatar: Images.AddFriend,
+                    username: '@altin_xhaka',
+                    mutualFriends: 0,
+                    isNewRequest: false,
+                },
+            ];
+
+            setRequestsList(mockRequests);
+            setOriginalRequestsList(mockRequests);
+            setLoading(false);
+        } catch (err) {
+            console.log('Error getting friend requests:', err);
+            setLoading(false);
+            setRequestsList([]);
+            setOriginalRequestsList([]);
+        }
+    };
+
+    // Load data when component mounts or tab changes
     useFocusEffect(
         useCallback(() => {
-            getTrustedContacts();
+            if (activeTab === 'chats') {
+                getTrustedContacts();
+            } else {
+                getFriendRequests();
+            }
             return () => {
                 console.log('Chat screen unfocused');
             };
-        }, []),
+        }, [activeTab]),
     );
 
     const handleChatPress = useCallback((chatId: string) => {
@@ -154,18 +217,46 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
         }
     }, [chatList, navigation]);
 
+    const handleRequestAction = useCallback((requestId: string, action: 'accept' | 'decline' | 'block') => {
+        // TODO: Implement API calls for request actions
+        Alert.alert('Request Action', `${action} request for ID: ${requestId}`);
+        
+        // Remove from list after action
+        const updatedRequests = requestsList.filter(request => request.id !== requestId);
+        setRequestsList(updatedRequests);
+        setOriginalRequestsList(updatedRequests);
+    }, [requestsList]);
+
     const handleSearch = useCallback((text: string) => {
         setSearchText(text);
         if (text.trim() === '') {
-            setChatList(originalChatList);
+            if (activeTab === 'chats') {
+                setChatList(originalChatList);
+            } else {
+                setRequestsList(originalRequestsList);
+            }
         } else {
-            const filtered = originalChatList.filter(chat =>
-                chat.name.toLowerCase().includes(text.toLowerCase()) ||
-                chat.message.toLowerCase().includes(text.toLowerCase())
-            );
-            setChatList(filtered);
+            if (activeTab === 'chats') {
+                const filtered = originalChatList.filter(chat =>
+                    chat.name.toLowerCase().includes(text.toLowerCase()) ||
+                    chat.message.toLowerCase().includes(text.toLowerCase())
+                );
+                setChatList(filtered);
+            } else {
+                const filtered = originalRequestsList.filter(request =>
+                    request.name.toLowerCase().includes(text.toLowerCase()) ||
+                    request.message.toLowerCase().includes(text.toLowerCase()) ||
+                    (request.username && request.username.toLowerCase().includes(text.toLowerCase()))
+                );
+                setRequestsList(filtered);
+            }
         }
-    }, [originalChatList]);
+    }, [originalChatList, originalRequestsList, activeTab]);
+
+    const handleTabPress = useCallback((tab: 'chats' | 'requests') => {
+        setActiveTab(tab);
+        setSearchText(''); // Clear search when switching tabs
+    }, []);
 
     const renderChatItem = useCallback(({ item }: { item: ChatItemData }) => (
         <TouchableOpacity
@@ -195,37 +286,135 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
         </TouchableOpacity>
     ), [handleChatPress]);
 
-    const renderEmptyState = () => (
-        <View style={styles.emptyStateContainer}>
-            <Image source={Images.AddFriend} style={styles.emptyStateImage} />
-            <Text style={styles.emptyStateTitle}>No Trusted Contacts</Text>
-            <Text style={styles.emptyStateSubtitle}>
-                Add trusted contacts to start messaging them during emergencies
-            </Text>
-            <TouchableOpacity
-                style={styles.addContactButton}
-                onPress={() => {
-                    // Navigate to add contacts - adjust route name as needed
-                    navigation?.navigate('TrustedContacts');
-                }}
-            >
-                <Text style={styles.addContactButtonText}>Add Contacts</Text>
-            </TouchableOpacity>
+    const renderRequestItem = useCallback(({ item }: { item: RequestItemData }) => (
+        <View style={styles.requestItem}>
+            {item.isNewRequest && (
+                <Text style={styles.newRequestLabel}>NEW REQUEST</Text>
+            )}
+            <View style={styles.requestContent}>
+                <View style={styles.avatarContainer}>
+                    <Image source={item.avatar} style={styles.avatar} />
+                </View>
+
+                <View style={styles.requestInfo}>
+                    <View style={styles.requestHeader}>
+                        <Text style={styles.contactName}>{item.name}</Text>
+                        <Text style={styles.timeText}>{item.time}</Text>
+                    </View>
+                    <Text style={styles.requestMessage} numberOfLines={2}>
+                        {item.message}
+                    </Text>
+                    {item.username && (
+                        <Text style={styles.usernameText}>{item.username}</Text>
+                    )}
+                    {item.mutualFriends !== undefined && (
+                        <Text style={styles.mutualFriendsText}>
+                            {item.mutualFriends === 0 ? 'No mutual friends' : `${item.mutualFriends} mutual friends`}
+                        </Text>
+                    )}
+                </View>
+            </View>
+
+            <View style={styles.requestActions}>
+                <TouchableOpacity
+                    style={styles.acceptButton}
+                    onPress={() => handleRequestAction(item.id, 'accept')}
+                >
+                    <Text style={styles.acceptButtonText}>Accept</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                    style={styles.declineButton}
+                    onPress={() => handleRequestAction(item.id, 'decline')}
+                >
+                    <Text style={styles.declineButtonText}>Decline</Text>
+                </TouchableOpacity>
+
+                {!item.isNewRequest && (
+                    <TouchableOpacity
+                        style={styles.blockButton}
+                        onPress={() => handleRequestAction(item.id, 'block')}
+                    >
+                        <Text style={styles.blockButtonText}>Block</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
         </View>
-    );
+    ), [handleRequestAction]);
+
+    const renderEmptyState = () => {
+        if (activeTab === 'chats') {
+            return (
+                <View style={styles.emptyStateContainer}>
+                    <Image source={Images.AddFriend} style={styles.emptyStateImage} />
+                    <Text style={styles.emptyStateTitle}>No Trusted Contacts</Text>
+                    <Text style={styles.emptyStateSubtitle}>
+                        Add trusted contacts to start messaging them during emergencies
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.addContactButton}
+                        onPress={() => {
+                            // Navigate to add contacts - adjust route name as needed
+                            navigation?.navigate('TrustedContacts');
+                        }}
+                    >
+                        <Text style={styles.addContactButtonText}>Add Contacts</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        } else {
+            return (
+                <View style={styles.emptyStateContainer}>
+                    <Image source={Images.AddFriend} style={styles.emptyStateImage} />
+                    <Text style={styles.emptyStateTitle}>No Friend Requests</Text>
+                    <Text style={styles.emptyStateSubtitle}>
+                        When people send you friend requests, they will appear here
+                    </Text>
+                </View>
+            );
+        }
+    };
+
+    const getRequestsCount = () => {
+        return requestsList.length;
+    };
+
+    const getCurrentData = () => {
+        return activeTab === 'chats' ? chatList : requestsList;
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Messages</Text>
+            {/* Tab Header */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'chats' && styles.activeTab]}
+                    onPress={() => handleTabPress('chats')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]}>
+                        Messages
+                    </Text>
+                    {activeTab === 'chats' && <View style={styles.tabIndicator} />}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
+                    onPress={() => handleTabPress('requests')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>
+                        Requests {getRequestsCount() > 0 && `(${getRequestsCount()})`}
+                    </Text>
+                    {activeTab === 'requests' && <View style={styles.tabIndicator} />}
+                </TouchableOpacity>
             </View>
 
+            {/* Search Container */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchInputContainer}>
                     <Search size={24} color={"#666"} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search contacts..."
+                        placeholder={activeTab === 'chats' ? "Search friends..." : "Search requests..."}
                         placeholderTextColor="#999"
                         value={searchText}
                         onChangeText={handleSearch}
@@ -233,13 +422,14 @@ export const Chat: React.FC<ChatProps> = ({ navigation }) => {
                 </View>
             </View>
 
-            {chatList.length === 0 && !loading ? (
+            {/* Content */}
+            {getCurrentData().length === 0 && !loading ? (
                 renderEmptyState()
             ) : (
                 <FlatList
-                    data={chatList}
+                    data={getCurrentData()}
                     keyExtractor={(item) => item.id}
-                    renderItem={renderChatItem}
+                    renderItem={activeTab === 'chats' ? renderChatItem : renderRequestItem}
                     style={styles.chatList}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.chatListContainer}
@@ -263,16 +453,39 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
-    header: {
+    tabContainer: {
+        flexDirection: 'row',
         paddingHorizontal: 20,
-        paddingVertical: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        paddingTop: 15,
+        paddingBottom: 0,
+        backgroundColor: '#FFFFFF',
     },
-    headerTitle: {
-        fontSize: 24,
+    tab: {
+        flex: 1,
+        paddingVertical: 15,
+        alignItems: 'center',
+        position: 'relative',
+    },
+    activeTab: {
+        // Active tab styling handled by indicator
+    },
+    tabText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#999',
+    },
+    activeTabText: {
+        color: '#000',
         fontWeight: '600',
-        color: '#000000',
+    },
+    tabIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        backgroundColor: '#000',
+        borderRadius: 1.5,
     },
     searchContainer: {
         paddingHorizontal: 20,
@@ -285,12 +498,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 15,
         height: 45,
-    },
-    searchIcon: {
-        width: 18,
-        height: 18,
-        marginRight: 10,
-        tintColor: '#999',
     },
     searchInput: {
         flex: 1,
@@ -311,6 +518,91 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
+    },
+    requestItem: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    newRequestLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#999',
+        marginBottom: 10,
+        letterSpacing: 0.5,
+    },
+    requestContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    requestInfo: {
+        flex: 1,
+    },
+    requestHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    requestMessage: {
+        fontSize: 14,
+        color: '#666',
+        lineHeight: 20,
+        marginBottom: 5,
+    },
+    usernameText: {
+        fontSize: 14,
+        color: '#000',
+        marginBottom: 5,
+    },
+    mutualFriendsText: {
+        fontSize: 13,
+        color: '#999',
+        marginBottom: 15,
+    },
+    requestActions: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    acceptButton: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 6,
+        flex: 1,
+        alignItems: 'center',
+    },
+    acceptButtonText: {
+        color: '#000',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    declineButton: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 6,
+        flex: 1,
+        alignItems: 'center',
+    },
+    declineButtonText: {
+        color: '#000',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    blockButton: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 6,
+        flex: 1,
+        alignItems: 'center',
+    },
+    blockButtonText: {
+        color: '#000',
+        fontSize: 14,
+        fontWeight: '500',
     },
     avatarContainer: {
         marginRight: 15,
