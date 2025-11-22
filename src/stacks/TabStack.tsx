@@ -123,6 +123,7 @@ export const TabStack: React.FC = () => {
   // const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'LiveStream';
   const currentTabName = tabState?.routes?.[tabState?.index]?.name || 'Stream';
 
+
   const threatAlertMode = useSelector((state: RootState) => state.home.threatAlertMode);
   const headsUpRadius = useSelector((state: RootState) => state.home.headsUpRadius || 3);
   const userLocation = useSelector((state: RootState) => state.home.userLocation);
@@ -130,7 +131,7 @@ export const TabStack: React.FC = () => {
 
   const cameraMode = useSelector((state: RootState) => state.home.cameraMode || 'AUDIO');
   const isVideoMode = cameraMode === 'VIDEO';
-  const isOnLiveStreamTab = currentTabName === 'LiveStream';
+  const isOnLiveStreamTab = currentTabName === 'Stream';
 
   // Voice UI states
   const [showVoiceUI, setShowVoiceUI] = useState(false);
@@ -814,7 +815,7 @@ export const TabStack: React.FC = () => {
             tabBarStyle: {
               position: (isVideoMode && isOnLiveStreamTab) ? 'absolute' : 'relative',
               bottom: (isVideoMode && isOnLiveStreamTab) ? 0 : undefined,
-              backgroundColor: (isVideoMode && isOnLiveStreamTab) ? 'transparent' : 'rgba(0, 0, 0, 0.9)',
+              backgroundColor: (isVideoMode && isOnLiveStreamTab) ? 'transparent' : '#000000',
               left: 0,
               right: 0,
               shadowOpacity: 0,
