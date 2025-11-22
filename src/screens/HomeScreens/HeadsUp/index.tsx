@@ -167,6 +167,13 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   });
   const [mapType, setMapType] = useState<any>('standard');
 
+  //loading threats...
+  const [isLoadingMoreThreats, setIsLoadingMoreThreats] = useState(false);
+  const [allThreatsLoaded, setAllThreatsLoaded] = useState(false);
+  const threatsPageRef = useRef(1);
+  const [visibleThreats, setVisibleThreats] = useState<any[]>([]);
+  const [currentMapRegion, setCurrentMapRegion] = useState<any>(null);
+
   const mainMapButtons = [
     {
       id: 'addFriend',
@@ -301,6 +308,25 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       }
     });
   }, []);
+
+  const filterThreatsByMapRegion = useCallback((allThreats: any[], region: any) => {
+    if (!region) return allThreats.slice(0, 100); // Show first 100 if no region
+
+    const latitudePadding = region.latitudeDelta * 1.5; // Show a bit outside viewport
+    const longitudePadding = region.longitudeDelta * 1.5;
+
+    return allThreats.filter(threat => {
+      if (!threat.latitude || !threat.longitude) return false;
+
+      const inView =
+        threat.latitude >= region.latitude - latitudePadding &&
+        threat.latitude <= region.latitude + latitudePadding &&
+        threat.longitude >= region.longitude - longitudePadding &&
+        threat.longitude <= region.longitude + longitudePadding;
+      return inView;
+    });
+  }, []);
+
 
   const debouncedMapAnimation = useCallback(
     debounce((region: any) => {
@@ -478,6 +504,16 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
   //     };
   //   }, [dispatch])
   // );
+
+  useEffect(() => {
+    if (currentMapRegion) {
+      const visible = filterThreatsByMapRegion(filteredThreats, currentMapRegion);
+      setVisibleThreats(visible);
+      console.log(`👁️ Showing ${visible.length} threats in viewport`);
+    } else {
+      setVisibleThreats(filteredThreats.slice(0, 50));
+    }
+  }, [filteredThreats, currentMapRegion, filterThreatsByMapRegion]);
 
   useEffect(() => {
     if (currentLocation?.latitude && currentLocation?.longitude) {
@@ -893,28 +929,14 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
     }
   };
 
-  const loadThreats = async (retryCount = 0, maxRetries = 3) => {
-    // Check network connectivity first
-    const netInfo = await NetInfo.fetch();
+  const loadRemainingThreatsInBackground = async (allResults: any[], startIndex: number) => {
+    let currentIndex = startIndex;
+    const BATCH_SIZE = 50;
 
-    if (!netInfo.isConnected) {
-      Alert.alert(
-        'No Internet Connection',
-        'Please check your internet connection and try again.',
-        [{ text: 'Retry', onPress: () => loadThreats() }, { text: 'Cancel' }]
-      );
-      return;
-    }
+    while (currentIndex < allResults.length) {
+      const batchResults = allResults.slice(currentIndex, currentIndex + BATCH_SIZE);
 
-    try {
-      const response = await HomeAPIS.getThreatReports();
-
-      // Your existing logic - unchanged
-      if (!response?.data?.results) return;
-
-      console.log("📍 API Threat Results Loaded:", response.data.results.length);
-
-      const normalizedThreats = response.data.results.map((item: any) => ({
+      const normalizedThreats = batchResults.map((item: any) => ({
         id: item.id,
         realId: item.id,
         latitude: item.latitude ? parseFloat(item.latitude) : null,
@@ -934,18 +956,124 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       }));
 
       setThreats(prev => {
-        // Remove any temporary item that was replaced
-        const withoutConflictingTemp = prev.filter(
-          t => !normalizedThreats.some(newT => newT.id === t.id)
+        const newThreats = normalizedThreats.filter(
+          newThreat => !prev.some(existingThreat => existingThreat.id === newThreat.id)
         );
-
-        // Merge backend results with kept temp items
-        return [...withoutConflictingTemp, ...normalizedThreats];
+        return [...prev, ...newThreats];
       });
 
-      console.log("✅ Threat state updated after sync.");
+      console.log(`🔄 Background loaded: ${Math.min(currentIndex + BATCH_SIZE, allResults.length)}/${allResults.length} threats`);
 
-      // Reset retry count on success
+      currentIndex += BATCH_SIZE;
+
+      // Wait 500ms between batches to avoid blocking UI
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    setAllThreatsLoaded(true);
+    console.log("✅ All background threats loaded!");
+  };
+
+  const loadThreats = async (isInitialLoad = true, retryCount = 0, maxRetries = 3) => {
+    // Prevent multiple simultaneous loads
+    if (!isInitialLoad && (isLoadingMoreThreats || allThreatsLoaded)) {
+      return;
+    }
+
+    const netInfo = await NetInfo.fetch();
+    if (!netInfo.isConnected) {
+      Alert.alert(
+        'No Internet Connection',
+        'Please check your internet connection and try again.',
+        [{ text: 'Retry', onPress: () => loadThreats(isInitialLoad) }, { text: 'Cancel' }]
+      );
+      return;
+    }
+
+    if (isInitialLoad) {
+      setLoading(true);
+      threatsPageRef.current = 1;
+      setAllThreatsLoaded(false);
+    } else {
+      setIsLoadingMoreThreats(true);
+    }
+
+    try {
+      const response = await HomeAPIS.getThreatReports();
+
+      if (!response?.data?.results) {
+        setLoading(false);
+        setIsLoadingMoreThreats(false);
+        return;
+      }
+
+      const allResults = response.data.results;
+      console.log("📍 Total threats available:", allResults.length);
+
+      // ✅ PROGRESSIVE LOADING: Take only next batch of 100
+      const BATCH_SIZE = 50;
+      const startIndex = (threatsPageRef.current - 1) * BATCH_SIZE;
+      const endIndex = startIndex + BATCH_SIZE;
+      const batchResults = allResults.slice(startIndex, endIndex);
+
+      console.log(`📦 Loading batch ${threatsPageRef.current}: ${batchResults.length} threats (${startIndex}-${endIndex})`);
+
+      const normalizedThreats = batchResults.map((item: any) => ({
+        id: item.id,
+        realId: item.id,
+        latitude: item.latitude ? parseFloat(item.latitude) : null,
+        longitude: item.longitude ? parseFloat(item.longitude) : null,
+        timestamp: item.created_at,
+        created_at: item.created_at,
+        description: item.description || "Threat reported",
+        threat_type: item.report_type,
+        image: item.photo_urls?.length > 0 ? item.photo_urls[0] : null,
+        photo_urls: item.photo_urls || [],
+        icon: getThreatIcon(item.report_type),
+        confirm_votes: item.confirm_votes,
+        deny_votes: item.deny_votes,
+        user_vote: item.user_vote,
+        user: item.user,
+        is_automated: item.report_type === "automated_alert"
+      }));
+
+      setThreats(prev => {
+        if (isInitialLoad) {
+          // First load: replace all
+          return normalizedThreats;
+        } else {
+          // Subsequent loads: merge without duplicates
+          const newThreats = normalizedThreats.filter(
+            newThreat => !prev.some(existingThreat => existingThreat.id === newThreat.id)
+          );
+          return [...prev, ...newThreats];
+        }
+      });
+
+      console.log(`✅ Batch ${threatsPageRef.current} loaded successfully`);
+
+      if (isInitialLoad) {
+        setLoading(false);
+
+        // ✅ Load remaining threats in background if there are more
+        if (endIndex < allResults.length) {
+          console.log("🔄 Starting background loading for remaining threats...");
+          setTimeout(() => {
+            loadRemainingThreatsInBackground(allResults, endIndex);
+          }, 1000); // Wait 1 second before starting background load
+        } else {
+          setAllThreatsLoaded(true);
+        }
+      } else {
+        setIsLoadingMoreThreats(false);
+
+        // Check if more batches exist
+        if (endIndex >= allResults.length) {
+          setAllThreatsLoaded(true);
+          console.log("✅ All threats loaded!");
+        }
+      }
+
       if (retryCount > 0) {
         console.log('✅ Threats loaded successfully after retry');
       }
@@ -954,36 +1082,25 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
       console.log('❌ Error loading threat reports:', {
         message: error?.message,
         status: error?.response?.status,
-        data: error?.response?.data,
-        code: error?.code,
-        config: error?.config?.url,
         attempt: retryCount + 1
       });
 
       if (retryCount < maxRetries) {
-        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, retryCount) * 1000;
         console.log(`Retrying threats in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
 
         setTimeout(() => {
-          loadThreats(retryCount + 1, maxRetries);
+          loadThreats(isInitialLoad, retryCount + 1, maxRetries);
         }, delay);
       } else {
-        // Show different messages based on error type
-        let errorMessage = 'Failed to load threats after multiple attempts. Please check your connection.';
-
-        if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('timeout')) {
-          errorMessage = 'Network timeout after multiple attempts. Please check your internet connection and try again.';
-        } else if (error?.response?.status >= 500) {
-          errorMessage = 'Server error after multiple attempts. Please try again later.';
-        } else if (error?.response?.status === 401 || error?.response?.status === 403) {
-          errorMessage = 'Authentication error. Please log in again.';
-        }
+        setLoading(false);
+        setIsLoadingMoreThreats(false);
 
         Alert.alert(
           'Load Error',
-          errorMessage,
+          'Failed to load threats. Please try again.',
           [
-            { text: 'Retry', onPress: () => loadThreats(0, maxRetries) }, // Reset retry count
+            { text: 'Retry', onPress: () => loadThreats(isInitialLoad, 0, maxRetries) },
             { text: 'Cancel' }
           ]
         );
@@ -1573,7 +1690,9 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
             longitudeDelta: 0.02,
           }}
           mapType={mapType}
-          onRegionChangeComplete={loc => { }}
+          onRegionChangeComplete={(region) => {
+            setCurrentMapRegion(region);
+          }}
         >
           {/* Current location marker */}
           <Marker
@@ -1709,7 +1828,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
           })}
 
           {/* Threat Markers */}
-          {filteredThreats.map((threat: any, index: number) => (
+          {visibleThreats.map((threat: any, index: number) => (
             <Marker
               key={`threat-${threat.id}-${index}`}
               coordinate={{
@@ -1728,6 +1847,7 @@ export const HeadsUp: React.FC<HeadsUpProps> = ({ navigation, route }) => {
               </View>
             </Marker>
           ))}
+
 
           {/* Draggable threat marker - shown when user confirms reporting */}
           {showReportingMarker && draggedThreatLocation && tempThreatData && (
